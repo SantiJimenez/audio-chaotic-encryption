@@ -24,25 +24,40 @@ def stack_data(data, m):
 
     data_left = data[:, 0]
 
+    # Initialize numpy array using left data(mono) as int16
     data_array = np.array(data_left, dtype=np.int16)
 
+    # Translate the range (-32768, 32769) to positive values
     data_array = data_array + 32768
-    print("translate array:", data_array[100:105])
+    # print("translate array:", data_array[100:105])
+
+    # Function int value to string binary
     to_string_function = np.vectorize(lambda x: np.binary_repr(x).zfill(m))
+
+    # Generate binary string array from int16 array
     strings_array = to_string_function(data_array)
     print("string_array:", strings_array[100:105])
     # print("list -> data_array.shape:", list(data_array.shape))
-    binaries_array = np.zeros(list(data_array.shape), dtype=np.int8)
+
+    # Create new array binaries_array with [[16],[16], ... [16]] shape
+    binaries_array = np.zeros(list(data_array.shape) + [16], dtype=np.int8)
     # print("zeros -> binaries_array", binaries_array)
 
+    # Create new array with [[8],[8], ... [8]] shape of binaries_array*2 lenght
     bytes_array = np.zeros((data_array.shape[0]*2), dtype=np.int8)
     bytes_array = np.zeros(list(bytes_array.shape) + [8], dtype=np.int8)
 
+    # Function to return bit to bit to a [16] vector
     vectorize_bits_function = np.vectorize(lambda x: x[i_byte])
 
+    print("|------------------------------------|")
     for i_byte in range(0, m):
+        # print("binaries_array.shape: ", binaries_array.shape)
+        # print("binaries_array: ", binaries_array)
+        # print(i_byte, ": ", vectorize_bits_function(
+        #     strings_array).astype("int8"))
         binaries_array[..., i_byte] = vectorize_bits_function(
-            strings_array).astype("int8")
+            strings_array).astype("int16")
 
     print("binaries_array: ", binaries_array[100:110])
 
@@ -87,7 +102,7 @@ def stack_data(data, m):
         cola.append(flatten_array[j])
     print("Len cola = {}".format(len(cola)))
 
-    print("matrices muestras: ", matrices_datos_crudos[0][10:11])
+    print("matrices muestras: ", matrices_datos_crudos[0][10:20])
 
     return bytes_array
 
