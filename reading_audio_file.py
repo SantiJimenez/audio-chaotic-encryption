@@ -1,5 +1,20 @@
 import scipy.io.wavfile
 import numpy as np
+import math
+
+import constants
+
+# VARIABLES DE CONTROL
+
+# Polinomios de Chebyshev
+# x0, y0, m ,n
+CHEBYSHEV_X_0 = 0.48112959837082048697
+CHEBYSHEV_Y_0 = -0.3437604907376320
+CHEBYSHEV_N = 5.0468764305551317
+CHEBYSHEV_M = 23.0078127384258552
+
+# Global num of bytes of data
+total_bytes = 0
 
 
 def show_info(aname, a):
@@ -17,6 +32,26 @@ show_info("data", data)
 print("rate:", rate)
 print("dataset:", data[100:110, :])
 bytes_data = bytes(data[0])
+
+# def int_to_string(x, m):
+#     return np.vectorize(np.binary_repr(x).zfill(m))
+
+
+def vectorize_bits_array(array, m):
+    int_to_string_function = np.vectorize(lambda x: np.binary_repr(x).zfill(m))
+    strings_array = int_to_string_function(array)
+
+    vectorize_bits_function = np.vectorize(lambda x: x[i_byte])
+
+    bytes_array = np.zeros((len(array)), dtype=np.int8)
+    bytes_array = np.zeros(list(bytes_array.shape) + [m], dtype=np.int8)
+
+    for i_byte in range(0, m):
+        bytes_array[..., i_byte] = vectorize_bits_function(
+            strings_array).astype("int8")
+
+    # print("Bloques de claves: ", bytes_array[0:10])
+    return bytes_array
 
 
 def stack_data(data, m):
@@ -43,7 +78,7 @@ def stack_data(data, m):
     binaries_array = np.zeros(list(data_array.shape) + [16], dtype=np.int8)
     # print("zeros -> binaries_array", binaries_array)
 
-    # Create new array with [[8],[8], ... [8]] shape of binaries_array*2 lenght
+    # Create new array with [[8],[8], ... [8]] shape of binaries_array*2 length
     bytes_array = np.zeros((data_array.shape[0]*2), dtype=np.int8)
     bytes_array = np.zeros(list(bytes_array.shape) + [8], dtype=np.int8)
 
@@ -59,10 +94,19 @@ def stack_data(data, m):
         binaries_array[..., i_byte] = vectorize_bits_function(
             strings_array).astype("int16")
 
-    print("binaries_array: ", binaries_array[100:110])
+    print("binaries_array: ", binaries_array[0:5])
 
     j = 0
-    print("Lenght bytes_array: ", bytes_array.shape[0])
+    print("Length binaries_array: ", binaries_array.shape[0])
+    print("Length bytes_array (16): ", bytes_array.shape[0])
+
+    # Set global value num of bytes in data
+    total_bytes = bytes_array.shape[0]
+
+    bytes_key_arrays = key_data(
+        CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M, total_bytes)
+
+    print("Keys muestra: ", bytes_key_arrays[0:10])
 
     for i in binaries_array:
         # print(i)
@@ -76,7 +120,14 @@ def stack_data(data, m):
         else:
             j += 1
 
+    print("Bytes array muestra: ", bytes_array[0:10])
+    print("Lenght bytes array (8): ", bytes_array.shape[0])
+    print("Lenght bytes key array (8): ", bytes_key_arrays.shape[0])
+
     flatten_array = bytes_array.flatten()
+    flatten_array_keys = bytes_key_arrays.flatten()
+    print("Flatten array muestra: ", flatten_array[0:24])
+    print("Flatten array keys muestra: ", flatten_array_keys[0:24])
     cantidad_binarios_fila = 400
     cantidad_binarios_columna = 400
     cantidad_elementos_totales_matriz = cantidad_binarios_fila * \
@@ -84,29 +135,77 @@ def stack_data(data, m):
     num_matrices = len(flatten_array) // cantidad_elementos_totales_matriz
 
     matrices_datos_crudos = []
+    matrices_keys_crudos = []
     el = 0
     print("Numero de matrices {}".format(num_matrices))
     for i in range(0, num_matrices):
-        matriz = []
+        matriz_data = []
+        matriz_key = []
         for r in range(0, cantidad_binarios_fila):
-            row = []
+            row_data = []
+            row_key = []
             for c in range(0, cantidad_binarios_columna):
-                row.append(flatten_array[el])
+                row_data.append(flatten_array[el])
+                row_key.append(flatten_array_keys[el])
                 el += 1
-            matriz.append(row)
-        matrices_datos_crudos.append(matriz)
-        print("size matrices w ={}x{}".format(len(matriz[0]), len(matriz)))
+            matriz_data.append(row_data)
+            matriz_key.append(row_key)
+        matrices_datos_crudos.append(matriz_data)
+        matrices_keys_crudos.append(matriz_key)
+        print("size matrices w ={}x{}".format(
+            len(matriz_data[0]), len(matriz_data)))
 
     cola = []
     for j in range(el, len(flatten_array)):
         cola.append(flatten_array[j])
     print("Len cola = {}".format(len(cola)))
 
-    print("matrices muestras: ", matrices_datos_crudos[0][10:20])
+    # print("matrices muestras: ", matrices_datos_crudos[0][10:11])
+    # print("matrices keys muestras: ", matrices_keys_crudos[0][10:11])
 
-    return bytes_array
+    # return bytes_array
+    return matrices_datos_crudos, cola, matrices_keys_crudos
 
 
-data_matrix = stack_data(data, 16)
+def key_data(x_0, y_0, n, m, lenght):
 
-# print("data_matrix: ", data_matrix)
+    def polynomialSequenceX(x): return math.cos(n*math.acos(x))
+    def polynomialSequenceY(y): return math.cos(m*math.acos(y))
+
+    def normalizationValues(x):
+        n1 = math.floor(x * 10**5)
+        n2 = math.floor(x * 10**9) - (n1 * 10**4)
+        return (n1 ^ n2) % 256
+
+    x = x_0
+    y = y_0
+
+    list_keys = []
+    for i in range(0, int(lenght/2)):
+        x = polynomialSequenceX(x)
+        y = polynomialSequenceY(y)
+
+        list_keys.append(normalizationValues(
+            x))
+        list_keys.append(normalizationValues(
+            y))
+
+    list_keys = vectorize_bits_array(list_keys, 8)
+
+    # print("List keys: ", list_keys)
+
+    return list_keys
+
+
+data_matrix, tail, key_matrix = stack_data(data, 16)
+print("Muestra matrices [0]: ", len(data_matrix))
+print("Muestra cola: ", len(tail))
+
+xor_data = np.bitwise_xor(data_matrix, key_matrix)
+
+print("Muestra matrices data: ", data_matrix[0][10][0:8])
+print("Muestra keys data:     ", key_matrix[0][10][0:8])
+print("Muestra xor data:      ", xor_data[0][10][0:8])
+
+# key_list = key_data(CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M)
+# print("Muestra matrices claves: ", key_list)
