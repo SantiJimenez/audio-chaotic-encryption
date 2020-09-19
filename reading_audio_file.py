@@ -204,9 +204,6 @@ def key_data(x_0, y_0, n, m, lenght):
     return list_keys
 
 
-def new_position_data(x_0):
-
-
 data_matrix, tail, key_matrix = stack_data(data, 16)
 print("Cantidad matrices: ", len(data_matrix))
 print("Logitud cola: ", len(tail))
