@@ -4,8 +4,8 @@ import math
 
 import constants
 
-# VARIABLES DE CONTROL
-
+# --------- VARIABLES DE CONTROL ---------- #
+#
 # Polinomios de Chebyshev
 # x0, y0, m ,n
 CHEBYSHEV_X_0 = 0.48112959837082048697
@@ -13,8 +13,16 @@ CHEBYSHEV_Y_0 = -0.3437604907376320
 CHEBYSHEV_N = 5.0468764305551317
 CHEBYSHEV_M = 23.0078127384258552
 
+# Funcion Tienda
+# a
+TIENDA_A = 0.0525434533533456
+# ---------- VARIABLES DE CONTROL ---------- #
+
+# ----------- VARIABLES GLOBALES ----------- #
+#
 # Global num of bytes of data
 total_bytes = 0
+# ----------- VARIABLES GLOBALES ----------- #
 
 
 def show_info(aname, a):
@@ -85,29 +93,26 @@ def stack_data(data, m):
     # Function to return bit to bit to a [16] vector
     vectorize_bits_function = np.vectorize(lambda x: x[i_byte])
 
-    print("|------------------------------------|")
+    # Covert all array to bit to bit vectors
     for i_byte in range(0, m):
-        # print("binaries_array.shape: ", binaries_array.shape)
-        # print("binaries_array: ", binaries_array)
-        # print(i_byte, ": ", vectorize_bits_function(
-        #     strings_array).astype("int8"))
         binaries_array[..., i_byte] = vectorize_bits_function(
             strings_array).astype("int16")
 
     print("binaries_array: ", binaries_array[0:5])
-
-    j = 0
     print("Length binaries_array: ", binaries_array.shape[0])
     print("Length bytes_array (16): ", bytes_array.shape[0])
 
     # Set global value num of bytes in data
     total_bytes = bytes_array.shape[0]
 
+    # Generation of key blocks
     bytes_key_arrays = key_data(
         CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M, total_bytes)
 
     print("Keys muestra: ", bytes_key_arrays[0:10])
 
+    # Split bytes vectors
+    j = 0
     for i in binaries_array:
         # print(i)
         bytes_array[j] = np.array_split(i, 2)[0]
@@ -124,12 +129,15 @@ def stack_data(data, m):
     print("Lenght bytes array (8): ", bytes_array.shape[0])
     print("Lenght bytes key array (8): ", bytes_key_arrays.shape[0])
 
+    # Flatten data vector, delete vector structures
     flatten_array = bytes_array.flatten()
     flatten_array_keys = bytes_key_arrays.flatten()
     print("Flatten array muestra: ", flatten_array[0:24])
     print("Flatten array keys muestra: ", flatten_array_keys[0:24])
-    cantidad_binarios_fila = 400
-    cantidad_binarios_columna = 400
+
+    # Creation of data matrix and tail
+    cantidad_binarios_fila = 25
+    cantidad_binarios_columna = 25
     cantidad_elementos_totales_matriz = cantidad_binarios_fila * \
         cantidad_binarios_columna  # 400 * 400
     num_matrices = len(flatten_array) // cantidad_elementos_totales_matriz
@@ -152,8 +160,7 @@ def stack_data(data, m):
             matriz_key.append(row_key)
         matrices_datos_crudos.append(matriz_data)
         matrices_keys_crudos.append(matriz_key)
-        print("size matrices w ={}x{}".format(
-            len(matriz_data[0]), len(matriz_data)))
+        # print("size matrices w ={}x{}".format(len(matriz_data[0]), len(matriz_data)))
 
     cola = []
     for j in range(el, len(flatten_array)):
@@ -197,9 +204,12 @@ def key_data(x_0, y_0, n, m, lenght):
     return list_keys
 
 
+def new_position_data(x_0):
+
+
 data_matrix, tail, key_matrix = stack_data(data, 16)
-print("Muestra matrices [0]: ", len(data_matrix))
-print("Muestra cola: ", len(tail))
+print("Cantidad matrices: ", len(data_matrix))
+print("Logitud cola: ", len(tail))
 
 xor_data = np.bitwise_xor(data_matrix, key_matrix)
 
