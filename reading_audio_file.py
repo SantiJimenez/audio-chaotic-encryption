@@ -16,6 +16,7 @@ CHEBYSHEV_M = 23.0078127384258552
 # Funcion Tienda
 # a
 TIENDA_A = 0.0525434533533456
+TIENDA_X_0 = 0.48112959837082048697
 # ---------- VARIABLES DE CONTROL ---------- #
 
 # ----------- VARIABLES GLOBALES ----------- #
@@ -100,7 +101,7 @@ def stack_data(data, m):
 
     print("binaries_array: ", binaries_array[0:5])
     print("Length binaries_array: ", binaries_array.shape[0])
-    print("Length bytes_array (16): ", bytes_array.shape[0])
+    # print("Length bytes_array (16): ", bytes_array.shape[0])
 
     # Set global value num of bytes in data
     total_bytes = bytes_array.shape[0]
@@ -109,7 +110,7 @@ def stack_data(data, m):
     bytes_key_arrays = key_data(
         CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M, total_bytes)
 
-    print("Keys muestra: ", bytes_key_arrays[0:10])
+    # print("Keys muestra: ", bytes_key_arrays[0:10])
 
     # Split bytes vectors
     j = 0
@@ -129,49 +130,11 @@ def stack_data(data, m):
     print("Lenght bytes array (8): ", bytes_array.shape[0])
     print("Lenght bytes key array (8): ", bytes_key_arrays.shape[0])
 
-    # Flatten data vector, delete vector structures
-    flatten_array = bytes_array.flatten()
-    flatten_array_keys = bytes_key_arrays.flatten()
-    print("Flatten array muestra: ", flatten_array[0:24])
-    print("Flatten array keys muestra: ", flatten_array_keys[0:24])
-
-    # Creation of data matrix and tail
-    cantidad_binarios_fila = 25
-    cantidad_binarios_columna = 25
-    cantidad_elementos_totales_matriz = cantidad_binarios_fila * \
-        cantidad_binarios_columna  # 400 * 400
-    num_matrices = len(flatten_array) // cantidad_elementos_totales_matriz
-
-    matrices_datos_crudos = []
-    matrices_keys_crudos = []
-    el = 0
-    print("Numero de matrices {}".format(num_matrices))
-    for i in range(0, num_matrices):
-        matriz_data = []
-        matriz_key = []
-        for r in range(0, cantidad_binarios_fila):
-            row_data = []
-            row_key = []
-            for c in range(0, cantidad_binarios_columna):
-                row_data.append(flatten_array[el])
-                row_key.append(flatten_array_keys[el])
-                el += 1
-            matriz_data.append(row_data)
-            matriz_key.append(row_key)
-        matrices_datos_crudos.append(matriz_data)
-        matrices_keys_crudos.append(matriz_key)
-        # print("size matrices w ={}x{}".format(len(matriz_data[0]), len(matriz_data)))
-
-    cola = []
-    for j in range(el, len(flatten_array)):
-        cola.append(flatten_array[j])
-    print("Len cola = {}".format(len(cola)))
-
     # print("matrices muestras: ", matrices_datos_crudos[0][10:11])
     # print("matrices keys muestras: ", matrices_keys_crudos[0][10:11])
 
     # return bytes_array
-    return matrices_datos_crudos, cola, matrices_keys_crudos
+    return bytes_array, bytes_key_arrays
 
 
 def key_data(x_0, y_0, n, m, lenght):
@@ -204,18 +167,99 @@ def key_data(x_0, y_0, n, m, lenght):
     return list_keys
 
 
-def new_position_data(x_0):
+def permutation_data(lenght):
+
+    def tend_map_iterator(x_0):
+        x_i = 0
+        if x_0 >= 0 and x_0 <= TIENDA_A:
+            x_i = x_0/TIENDA_A
+        elif x_0 > TIENDA_A and x_0 <= 1:
+            x_i = (1 - x_0)/(1 - TIENDA_A)
+
+        return x_i
+
+    list_positions = []
+    x_i = TIENDA_X_0
+    for i in range(lenght + 51):
+        x_i = tend_map_iterator(x_i)
+        if i > 50:
+            x_final = math.floor((x_i * 10**2) % 8)
+            # POR REVISAR, ELECCION DE NUMERO
+            list_positions.append(x_final)
+
+    # list_positions = vectorize_bits_array(list_positions, 8)
+    return list_positions
 
 
-data_matrix, tail, key_matrix = stack_data(data, 16)
-print("Cantidad matrices: ", len(data_matrix))
-print("Logitud cola: ", len(tail))
+def permutate_data(data_array, position_data):
+    permuted_data = []
+    for i in range(len(data_array)):
+        if i < 10:
+            print("vector original:  ",
+                  data_array[i], " -> ", position_data[i])
+            print("vector permutado: ", np.roll(
+                data_array[i], position_data[i]))
+        permuted_data.append(np.roll(data_array[i], position_data[i]))
 
-xor_data = np.bitwise_xor(data_matrix, key_matrix)
+    return permuted_data
 
-print("Muestra matrices data: ", data_matrix[0][10][0:8])
-print("Muestra keys data:     ", key_matrix[0][10][0:8])
-print("Muestra xor data:      ", xor_data[0][10][0:8])
+
+def binary_array_to_int(array):
+    result = 0
+    for digits in array:
+        result = (result << 1) | digits
+
+    return result
+
+
+def int_to_binary_array(num, m):
+    """Convert a positive integer num into an m-bit bit vector"""
+    return np.array(list(np.binary_repr(num).zfill(m))).astype(np.int8)
+
+
+def substitute_data(data_array):
+
+    substituted_data = []
+
+    for byte in data_array:
+        # print("byte: ", byte)
+        num = binary_array_to_int(byte)
+        # print("num: ", num)
+        # print("inverse: ", pow(num.item(), 15, 17))
+        inverse = pow(num.item(), 15, 17)
+        # print("binary: ", int_to_binary_array(inverse, 8))
+        substituted_data.append(int_to_binary_array(inverse, 8))
+
+    return substituted_data
+
+
+data_array, key_array = stack_data(data, 16)
+print("Cantidad bytes: ", len(data_array))
+print("Muestra matrices data:")
+print(data_array[10:18])
+
+positions_array = permutation_data(len(data_array))
+print("Cantidad positions: ", len(positions_array))
+print("Muestra positions data:")
+print(positions_array[10:18])
+
+permuted_array = permutate_data(data_array, positions_array)
+print("Muestra permuted data:")
+print(permuted_array[10:18])
+
+xor_array = np.bitwise_xor(permuted_array, key_array)
+print("Cantidad bytes de clave: ", len(key_array))
+print("Muestra clave data:")
+print(key_array[10:18])
+print("Muestra xor data:")
+print(xor_array[10:18])
+
+substituted_array = substitute_data(xor_array)
+print("Muestra substituted data:")
+print(substituted_array[10:18])
+
+print("|---------------------------------------------------------|")
+print("|---------------------------------------------------------|")
 
 # key_list = key_data(CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M)
 # print("Muestra matrices claves: ", key_list)
