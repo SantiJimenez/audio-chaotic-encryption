@@ -1,5 +1,6 @@
 import scipy.io.wavfile
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 
 import constants
@@ -35,12 +36,26 @@ def show_info(aname, a):
     print("|-------------------------|")
 
 
+def plot_info(data):
+    time = np.linspace(0., data.shape[0], data.shape[0])
+    plt.plot(time, data[:, 0], label="Left channel")
+    # plt.plot(time, data[:, 1], label="Right channel")
+    plt.legend()
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude")
+    plt.show()
+
+
 rate, data = scipy.io.wavfile.read('lion.wav')
 
 show_info("data", data)
+
 print("rate:", rate)
-print("dataset:", data[100:110, :])
+print("dataset:", data[44:54, :])
 bytes_data = bytes(data[0])
+
+data_header = data[0:44, :]
+show_info("headerData", data_header)
 
 # def int_to_string(x, m):
 #     return np.vectorize(np.binary_repr(x).zfill(m))
@@ -64,12 +79,14 @@ def vectorize_bits_array(array, m):
 
 
 def stack_data(data, m):
-    data_right = data[:, 1]
+    data_right = data[44:, 1]
 
-    data_left = data[:, 0]
+    data_left = data[44:, 0]
 
     # Initialize numpy array using left data(mono) as int16
     data_array = np.array(data_left, dtype=np.int16)
+
+    # print("data_left: ", data_left[1000:1100])
 
     # Translate the range (-32768, 32769) to positive values
     data_array = data_array + 32768
@@ -160,6 +177,7 @@ def key_data(x_0, y_0, n, m, lenght):
         list_keys.append(normalizationValues(
             y))
 
+    print("list_keys: ", list_keys[10:18])
     list_keys = vectorize_bits_array(list_keys, 8)
 
     # print("List keys: ", list_keys)
@@ -194,11 +212,11 @@ def permutation_data(lenght):
 def permutate_data(data_array, position_data):
     permuted_data = []
     for i in range(len(data_array)):
-        if i < 10:
-            print("vector original:  ",
-                  data_array[i], " -> ", position_data[i])
-            print("vector permutado: ", np.roll(
-                data_array[i], position_data[i]))
+        # if i < 10:
+        #     print("vector original:  ",
+        #           data_array[i], " -> ", position_data[i])
+        #     print("vector permutado: ", np.roll(
+        #         data_array[i], position_data[i]))
         permuted_data.append(np.roll(data_array[i], position_data[i]))
 
     return permuted_data
@@ -233,6 +251,50 @@ def substitute_data(data_array):
     return substituted_data
 
 
+def convert_to_wav_file(data_array):
+    binaries_array = np.zeros(int(len(data_array) / 2), dtype=np.int16)
+    # binaries_array = np.zeros(
+    #     list(binaries_array.shape) + [16], dtype=np.int16)
+
+    j = 0
+    for i in range(0, len(binaries_array)):
+        binaries_array[i] = binary_array_to_int(
+            np.concatenate((data_array[j], data_array[j+1]), axis=0))
+        # if j < 10:
+        #     print("Type: ", type(data_array[j]))
+        #     print("Concatenated 1: ", data_array[j])
+        #     print("Concatenated 2: ", data_array[j+1])
+        #     print("Concatenated: ", np.concatenate((data_array[j], data_array[j+1])))
+        #     print("---------->: ", binaries_array[i])
+
+        j += 2
+        if j >= len(data_array):
+            break
+
+    print("Frecuencias trasladadas: ", binaries_array[0:10])
+
+    binaries_array = binaries_array - 32768
+
+    print("Frecuencias: ", binaries_array[0:10])
+    print("Cantidad frecuencias: ", len(binaries_array))
+
+    final_array = np.empty_like(data)
+    # print("Final data: ", final_array[0:43])
+    show_info("binariesArray", binaries_array)
+    final_array[:, 0] = np.concatenate((data_header[:, 0], binaries_array))
+    final_array[:, 1] = np.concatenate((data_header[:, 1], binaries_array))
+    final_array = final_array.astype(np.int16)
+    print("Final data: ", final_array[44:54])
+
+    plot_info(data)
+    plot_info(final_array)
+
+    scipy.io.wavfile.write('lion-encrypted.wav', rate, final_array)
+
+    new_rate, new_data = scipy.io.wavfile.read('lion-encrypted.wav')
+    show_info("NewData", new_data)
+
+
 data_array, key_array = stack_data(data, 16)
 print("Cantidad bytes: ", len(data_array))
 print("Muestra matrices data:")
@@ -258,8 +320,12 @@ substituted_array = substitute_data(xor_array)
 print("Muestra substituted data:")
 print(substituted_array[10:18])
 
+
 print("|---------------------------------------------------------|")
 print("|---------------------------------------------------------|")
+
+convert_to_wav_file(substituted_array)
+
 
 # key_list = key_data(CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M)
 # print("Muestra matrices claves: ", key_list)
