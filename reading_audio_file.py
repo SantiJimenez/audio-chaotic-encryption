@@ -2,6 +2,8 @@ import scipy.io.wavfile
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
 
 import constants
 
@@ -293,6 +295,12 @@ def convert_to_wav_file(data_array):
 
     new_rate, new_data = scipy.io.wavfile.read('lion-encrypted.wav')
     show_info("NewData", new_data)
+
+    corr, _ = pearsonr(data[:, 0], final_array[:, 0])
+    print('Pearsons correlation: %.3f' % corr)
+
+    corr, _ = spearmanr(data[:, 0], final_array[:, 0])
+    print('Spearmans correlation: %.3f' % corr)
 
 
 data_array, key_array = stack_data(data, 16)
