@@ -154,8 +154,8 @@ def stack_data(data, m):
             j += 1
 
     print("Bytes array muestra: ", bytes_array[0:10])
-    print("Lenght bytes array (8): ", bytes_array.shape[0])
-    print("Lenght bytes key array (8): ", bytes_key_arrays.shape[0])
+    print("Lenght bytes array (4): ", bytes_array.shape[0])
+    print("Lenght bytes key array (4): ", bytes_key_arrays.shape[0])
 
     # print("matrices muestras: ", matrices_datos_crudos[0][10:11])
     # print("matrices keys muestras: ", matrices_keys_crudos[0][10:11])
