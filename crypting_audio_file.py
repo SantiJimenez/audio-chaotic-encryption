@@ -107,9 +107,9 @@ def stack_data(data, m):
     binaries_array = np.zeros(list(data_array.shape) + [16], dtype=np.int8)
     # print("zeros -> binaries_array", binaries_array)
 
-    # Create new array with [[8],[8], ... [8]] shape of binaries_array*2 length
-    bytes_array = np.zeros((data_array.shape[0]*2), dtype=np.int8)
-    bytes_array = np.zeros(list(bytes_array.shape) + [8], dtype=np.int8)
+    # Create new array with [[8],[8], ... [8]] shape of binaries_array*4 length
+    bytes_array = np.zeros((data_array.shape[0]*4), dtype=np.int8)
+    bytes_array = np.zeros(list(bytes_array.shape) + [4], dtype=np.int8)
 
     # Function to return bit to bit to a [16] vector
     vectorize_bits_function = np.vectorize(lambda x: x[i_byte])
@@ -136,11 +136,17 @@ def stack_data(data, m):
     # Split bytes vectors
     j = 0
     for i in binaries_array:
-        # print(i)
-        bytes_array[j] = np.array_split(i, 2)[0]
+        # Divide [16] vector into [4][4][4][4]
+        bytes_array[j] = np.array_split(i, 4)[0]
         # print("bytes_array[",j,"]", bytes_array[j])
         j += 1
-        bytes_array[j] = np.array_split(i, 2)[1]
+        bytes_array[j] = np.array_split(i, 4)[1]
+        # print("bytes_array[",j,"]", bytes_array[j])
+        j += 1
+        bytes_array[j] = np.array_split(i, 4)[2]
+        # print("bytes_array[",j,"]", bytes_array[j])
+        j += 1
+        bytes_array[j] = np.array_split(i, 4)[3]
         # print("bytes_array[",j,"]", bytes_array[j])
         if j == bytes_array.shape[0]-1:
             break
@@ -182,7 +188,7 @@ def key_data(x_0, y_0, n, m, lenght):
             y))
 
     # print("list_keys: ", list_keys[10:18])
-    list_keys = vectorize_bits_array(list_keys, 8)
+    list_keys = vectorize_bits_array(list_keys, 4)
 
     return list_keys
 
@@ -203,7 +209,7 @@ def permutation_data(lenght):
     for i in range(lenght + 51):
         x_i = tend_map_iterator(x_i)
         if i > 50:
-            x_final = math.floor((x_i * 10**2) % 8)
+            x_final = math.floor((x_i * 10**2) % 4)
             # POR REVISAR, ELECCION DE NUMERO
             list_positions.append(x_final)
 
@@ -249,7 +255,7 @@ def substitute_data(data_array):
             # print("inverse: ", pow(num.item(), 15, 17))
             inverse = pow(num.item(), 15, 17)
             # print("binary: ", int_to_binary_array(inverse, 8))
-            substituted_data.append(int_to_binary_array(inverse, 8))
+            substituted_data.append(int_to_binary_array(inverse, 4))
         else:
             # print("byte: ", byte)
             num = binary_array_to_int(byte)
@@ -257,21 +263,21 @@ def substitute_data(data_array):
             # print("inverse: ", pow(num.item(), 15, 17))
             inverse = pow(num.item(), 15, 17)
             # print("binary: ", int_to_binary_array(inverse, 8))
-            substituted_data.append(int_to_binary_array(inverse, 8))
+            substituted_data.append(int_to_binary_array(inverse, 4))
         j += 1
 
     return substituted_data
 
 
 def convert_to_wav_file(data_array):
-    binaries_array = np.zeros(int(len(data_array) / 2), dtype=np.int16)
+    binaries_array = np.zeros(int(len(data_array) / 4), dtype=np.int16)
     # binaries_array = np.zeros(
     #     list(binaries_array.shape) + [16], dtype=np.int16)
 
     j = 0
     for i in range(0, len(binaries_array)):
         binaries_array[i] = binary_array_to_int(
-            np.concatenate((data_array[j], data_array[j+1]), axis=0))
+            np.concatenate((data_array[j], data_array[j+1], data_array[j+2], data_array[j+3]), axis=0))
         # if j < 10:
         #     print("Type: ", type(data_array[j]))
         #     print("Concatenated 1: ", data_array[j])
@@ -279,7 +285,7 @@ def convert_to_wav_file(data_array):
         #     print("Concatenated: ", np.concatenate((data_array[j], data_array[j+1])))
         #     print("---------->: ", binaries_array[i])
 
-        j += 2
+        j += 4
         if j >= len(data_array):
             break
 
@@ -298,8 +304,8 @@ def convert_to_wav_file(data_array):
     final_array = final_array.astype(np.int16)
     print("Final data: ", final_array[44:54])
 
-    # plot_info(data)
-    # plot_info(final_array)
+    plot_info(data)
+    plot_info(final_array)
 
     scipy.io.wavfile.write('lion-encrypted.wav', rate, final_array)
 
