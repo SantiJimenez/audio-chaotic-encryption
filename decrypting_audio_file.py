@@ -48,17 +48,17 @@ def plot_info(data):
     plt.show()
 
 
-rate, data = scipy.io.wavfile.read('lion-encrypted.wav')
+rate, data = scipy.io.wavfile.read('audio/lion-encrypted.wav')
 
 show_info("data", data)
 
 print("rate:", rate)
-print("dataset samples:", data[44:54, :])
+print("dataset samples:", data[22:54, :])
 bytes_data = bytes(data[0])
 
-data_header = data[0:44, :]
+data_header = data[0:22, :]
 show_info("headerData", data_header)
-print("dataset header:", data[0:44, :])
+print("dataset header:", data[0:22, :])
 
 # def int_to_string(x, m):
 #     return np.vectorize(np.binary_repr(x).zfill(m))
@@ -82,9 +82,9 @@ def vectorize_bits_array(array, m):
 
 
 def stack_data(data, m):
-    data_right = data[44:, 1]
+    data_right = data[22:, 1]
 
-    data_left = data[44:, 0]
+    data_left = data[22:, 0]
 
     # Initialize numpy array using left data(mono) as int16
     data_array = np.array(data_left, dtype=np.int16)
@@ -153,9 +153,9 @@ def stack_data(data, m):
         else:
             j += 1
 
-    print("Bytes array muestra: ", bytes_array[0:10])
-    print("Lenght bytes array (4): ", bytes_array.shape[0])
-    print("Lenght bytes key array (4): ", bytes_key_arrays.shape[0])
+    # print("Bytes array muestra: ", bytes_array[0:10])
+    # print("Lenght bytes array (4): ", bytes_array.shape[0])
+    # print("Lenght bytes key array (4): ", bytes_key_arrays.shape[0])
 
     # print("matrices muestras: ", matrices_datos_crudos[0][10:11])
     # print("matrices keys muestras: ", matrices_keys_crudos[0][10:11])
@@ -289,63 +289,65 @@ def convert_to_wav_file(data_array):
         if j >= len(data_array):
             break
 
-    print("Frecuencias trasladadas: ", binaries_array[0:10])
+    # print("Frecuencias trasladadas: ", binaries_array[0:10])
 
     binaries_array = binaries_array - 32768
 
-    print("Frecuencias: ", binaries_array[0:10])
-    print("Cantidad frecuencias: ", len(binaries_array))
+    # print("Frecuencias: ", binaries_array[0:10])
+    # print("Cantidad frecuencias: ", len(binaries_array))
 
     final_array = np.empty_like(data)
-    print("Final data: ", final_array[0:43])
+    # print("Final data: ", final_array[0:43])
     show_info("binariesArray", binaries_array)
     final_array[:, 0] = np.concatenate((data_header[:, 0], binaries_array))
     final_array[:, 1] = np.concatenate((data_header[:, 1], binaries_array))
     final_array = final_array.astype(np.int16)
-    print("Final data: ", final_array[44:54])
+    # print("Final data: ", final_array[22:54])
 
-    plot_info(data)
-    plot_info(final_array)
+    # plot_info(data)
+    # plot_info(final_array)
 
-    scipy.io.wavfile.write('lion-decrypted.wav', rate, final_array)
+    scipy.io.wavfile.write(
+        'audio/lion-decrypted.wav', rate, final_array)
 
-    new_rate, new_data = scipy.io.wavfile.read('lion-decrypted.wav')
-    show_info("NewData", new_data)
+    # new_rate, new_data = scipy.io.wavfile.read(
+    #     'audio/lion-decrypted.wav')
+    # show_info("NewData", new_data)
 
     corr, _ = pearsonr(data[:, 0], final_array[:, 0])
-    print('Pearsons correlation: %.3f' % corr)
+    # print('Pearsons correlation: %.3f' % corr)
 
     corr, _ = spearmanr(data[:, 0], final_array[:, 0])
-    print('Spearmans correlation: %.3f' % corr)
+    # print('Spearmans correlation: %.3f' % corr)
 
 
 data_array, key_array = stack_data(data, 16)
-print('-----------------------------------------')
-print('-----------------------------------------')
-print('-----------------------------------------')
-print("Cantidad total de bytes de data: ", len(data_array))
-print("Muestra matrices data:")
-print(data_array[10:18])
+# print('-----------------------------------------')
+# print('-----------------------------------------')
+# print('-----------------------------------------')
+# print("Cantidad total de bytes de data: ", len(data_array))
+# print("Muestra matrices data:")
+# print(data_array[10:18])
 
 substituted_array = substitute_data(data_array)
-print("Muestra substituted data:")
-print(substituted_array[10:18])
+# print("Muestra substituted data:")
+# print(substituted_array[10:18])
 
 xor_array = np.bitwise_xor(substituted_array, key_array)
-print("Cantidad bytes de clave: ", len(key_array))
-print("Muestra clave data:")
-print(key_array[10:18])
-print("Muestra xor data:")
-print(xor_array[10:18])
+# print("Cantidad bytes de clave: ", len(key_array))
+# print("Muestra clave data:")
+# print(key_array[10:18])
+# print("Muestra xor data:")
+# print(xor_array[10:18])
 
 positions_array = permutation_data(len(xor_array))
-print("Cantidad positions: ", len(positions_array))
-print("Muestra positions data:")
-print(positions_array[10:18])
+# print("Cantidad positions: ", len(positions_array))
+# print("Muestra positions data:")
+# print(positions_array[10:18])
 
 permuted_array = permutate_data(xor_array, positions_array)
-print("Muestra permuted data:")
-print(permuted_array[10:18])
+# print("Muestra permuted data:")
+# print(permuted_array[10:18])
 
 print("|---------------------------------------------------------|")
 print("|---------------------------------------------------------|")
