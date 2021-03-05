@@ -1,9 +1,11 @@
-import scipy.io.wavfile
-import numpy as np
-import matplotlib.pyplot as plt
-import math
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
+from scipy.stats import entropy
+import scipy.io.wavfile
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import math
 
 import constants
 
@@ -56,7 +58,7 @@ def plot_info(data):
     plt.show()
 
 
-rate, data = scipy.io.wavfile.read(tracks[0][1])
+rate, data = scipy.io.wavfile.read(tracks[2][1])
 
 # show_info("data", data)
 
@@ -201,14 +203,14 @@ def key_data(x_0, y_0, n, m, lenght):
 
     # print("Claves generadas: \n", list_keys[0:5])
     list_keys = vectorize_bits_array(list_keys, 4)
-    # print("Claves de 4-bit obtenidas: \n", list_keys[0:10])
+    print("Numeros de claves de 4-bit obtenidas: \n", len(list_keys))
 
     return list_keys
 
 
 def permutation_data(lenght):
 
-    print("Numero de vectores en permutation_data: ", lenght)
+    # print("Numero de vectores en permutation_data: ", lenght)
 
     def tend_map_iterator(x_0):
         x_i = 0
@@ -237,9 +239,9 @@ def permutation_data(lenght):
             # print("tent value: ", x_final)
             # print("tent value in list: ", list_positions_tent[i])
 
-    longitud_bloque = 8
+    longitud_bloque = 625
     cantidad_bloques = math.floor(lenght/longitud_bloque)
-    print("Cantidad de bloques: ", cantidad_bloques)
+    print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
     longitud_cola = lenght % longitud_bloque
     print("Longitud cola: ", longitud_cola)
     for i in range(cantidad_bloques + 52):
@@ -253,20 +255,16 @@ def permutation_data(lenght):
 
     # list_positions = vectorize_bits_array(list_positions, 8)
     # print("Tent positions: \n", list_positions_tent)
-    # print("Tent positions lenght: \n", len(list_positions_tent))
+    print("Tent positions lenght: \n", len(list_positions_tent))
     # print("Logistic positions: \n", list_positions_logistic)
-    # print("Logistic positions lenght: \n", len(list_positions_logistic))
-    # print("Logistic positions lenght: \n", len(list_positions_logistic))
+    print("Logistic positions lenght: \n", len(list_positions_logistic))
     return list_positions_tent, list_positions_logistic, longitud_cola, longitud_bloque
 
 
 def permutate_data(data_array, position_data_bits, position_data_bytes, tail_lenght, block_lenght):
+
     permuted_data_bits = np.zeros(list(data_array.shape), dtype=np.int8)
-    # print("Permuted data bits zeros \n", permuted_data_bits)
     for i in range(len(data_array)):
-        # print("Posicion: ", position_data_bits[i])
-        # print("Antes: ", data_array[i])
-        # print("Despues: ", np.roll(data_array[i], position_data_bits[i]))
         permuted_data_bits[i] = np.roll(data_array[i], position_data_bits[i])
 
     # print("Data array \n", data_array)
@@ -288,19 +286,19 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
     # print(i)
     # print("permuted_data_bytes_head shape: \n", permuted_data_bytes_head.shape)
 
-    permuted_data_bytes_2d_head = permuted_data_bytes_head.reshape(
-        (len(position_data_bits) - tail_lenght), 4)
-    # print("permuted_data_bytes_head 2d: \n", permuted_data_bytes_2d_head)
-
     permuted_data_bytes_tail = np.roll(
         array_tail_reshaped[0], position_data_bytes[len(position_data_bytes) - 1], axis=0)
     # print("permuted_data_bytes_tail shape: \n", permuted_data_bytes_tail.shape)
     # print("permuted_data_bytes_tail 2d: \n", permuted_data_bytes_tail)
 
+    permuted_data_bytes_2d_head = permuted_data_bytes_head.reshape(
+        (len(position_data_bits) - tail_lenght), 4)
+    # print("permuted_data_bytes_head 2d: \n", permuted_data_bytes_2d_head)
+
     permuted_data = np.concatenate(
         (permuted_data_bytes_2d_head, permuted_data_bytes_tail), axis=0)
     # print("permuted_data: \n", permuted_data)
-    print("permuted_data shape: \n", permuted_data.shape)
+    # print("permuted_data shape: \n", permuted_data.shape)
     return permuted_data
 
 
@@ -383,25 +381,47 @@ def convert_to_wav_file(data_array):
     # plot_info(final_array)
 
     scipy.io.wavfile.write(
-        'audio/' + tracks[0][0] + '-encrypted.wav', rate, final_array)
+        'audio/' + tracks[2][0] + '-encrypted.wav', rate, final_array)
+
+    get_statics(data, final_array)
 
     # new_rate, new_data = scipy.io.wavfile.read(
     #     'audio/AnnenMayKantereit-19-encrypted.wav')
     # show_info("NewData", new_data)
 
-    corr, _ = pearsonr(data[:, 0], final_array[:, 0])
-    print('Pearsons correlation: %.3f' % corr)
+    # corr, _ = pearsonr(data[:, 0], final_array[:, 0])
+    # print('Pearsons correlation: %.3f' % corr)
 
-    corr, _ = spearmanr(data[:, 0], final_array[:, 0])
-    print('Spearmans correlation: %.3f' % corr)
+    # corr, _ = spearmanr(data[:, 0], final_array[:, 0])
+    # print('Spearmans correlation: %.3f' % corr)
+
+
+def signaltonoise(a, axis=0, ddof=0):
+    a = np.asanyarray(a)
+    m = a.mean(axis)
+    sd = a.std(axis=axis, ddof=ddof)
+    return np.where(sd == 0, 0, m/sd)
 
 
 def get_statics(init_data, final_data):
-    corr, _ = pearsonr(data[:, 0], final_array[:, 0])
-    print('Pearsons correlation: %.3f' % corr)
+    corr, _ = pearsonr(init_data[:, 0], final_data[:, 0])
+    print('Pearsons correlation: %.9f' % corr)
 
-    corr, _ = spearmanr(data[:, 0], final_array[:, 0])
-    print('Spearmans correlation: %.3f' % corr)
+    corr, _ = spearmanr(init_data[:, 0], final_data[:, 0])
+    print('Spearmans correlation: %.9f' % corr)
+
+    pd_series = pd.Series(data[:, 0])
+    counts = pd_series.value_counts()
+    entpy = entropy(counts)
+    print('Entropy original file: %.9f' % entpy)
+    pd_series = pd.Series(final_data[:, 0])
+    counts = pd_series.value_counts()
+    entpy = entropy(counts)
+    print('Entropy encrypted file: %.9f' % entpy)
+
+    print('SNR: %.9f' % signaltonoise(final_data[:, 0]))
+    print('MSE: %.9f' % np.square(np.subtract(
+        data[:, 0], final_data[:, 0])).mean())
 
 
 data_array, key_array = stack_data(data, 16)
