@@ -35,12 +35,12 @@ LOGISTICA_X_0 = 0.6734678425981357
 total_bytes = 0
 # ----------- VARIABLES GLOBALES ----------- #
 
-tracks = [['lion', 'audio/lion.wav'], ['AnnenMayKantereit-19', 'audio/AnnenMayKantereit-19.wav'],
+tracks = [['lion', 'audio/lion.wav'], ['AnnenMayKantereit-2', 'audio/AnnenMayKantereit-2-mono.wav'], ['Silhouettes-2', 'audio/Silhouettes-2.wav'], ['AnnenMayKantereit-19', 'audio/AnnenMayKantereit-19.wav'],
           ['Silhouettes-19', 'audio/Silhouettes-19.wav']]
 
 
 def show_info(aname, a):
-    print("|------| HEADER INFO |------|")
+    print("|------| ", aname, "INFO |------|")
     # print("Array:", aname)
     print("shape:", a.shape)
     print("dtype:", a.dtype)
@@ -58,7 +58,7 @@ def plot_info(data):
     plt.show()
 
 
-rate, data = scipy.io.wavfile.read(tracks[2][1])
+rate, data = scipy.io.wavfile.read(tracks[1][1])
 
 # show_info("data", data)
 
@@ -67,7 +67,7 @@ rate, data = scipy.io.wavfile.read(tracks[2][1])
 bytes_data = bytes(data[0])
 
 data_header = data[0:22, :]
-show_info("headerData", data_header)
+show_info("HEADER", data_header)
 print("dataset header:", data[0:22, :])
 
 # def int_to_string(x, m):
@@ -99,7 +99,7 @@ def stack_data(data, m):
     # Initialize numpy array using left data(mono) as int16
     data_array = np.array(data_left, dtype=np.int16)
 
-    print("Muestras de audio 16-bit con signo: \n", data_left[100:120])
+    # print("Muestras de audio 16-bit con signo: \n", data_left[100:120])
 
     # Translate the range (-32768, 32767) to positive values
     data_array = data_array + 32768
@@ -164,9 +164,9 @@ def stack_data(data, m):
             j += 1
 
     # print("Vectores 4-bit de audio obtenidos: \n", bytes_array[100:120])
-    print("Vectores 4-bit de audio obtenidos shape: \n", bytes_array.shape)
+    # print("Vectores 4-bit de audio obtenidos shape: \n", bytes_array.shape)
     total_bytes = bytes_array.shape[0]
-    print("Cantidad de vectores de audio obtenidos: \n", total_bytes)
+    # print("Cantidad de vectores de audio obtenidos: \n", total_bytes)
 
     # print("Lenght bytes array (4): ", bytes_array.shape[0])
     # print("Lenght bytes key array (4): ", bytes_key_arrays.shape[0])
@@ -203,7 +203,7 @@ def key_data(x_0, y_0, n, m, lenght):
 
     # print("Claves generadas: \n", list_keys[0:5])
     list_keys = vectorize_bits_array(list_keys, 4)
-    print("Numeros de claves de 4-bit obtenidas: \n", len(list_keys))
+    # print("Numeros de claves de 4-bit obtenidas: \n", len(list_keys))
 
     return list_keys
 
@@ -241,9 +241,9 @@ def permutation_data(lenght):
 
     longitud_bloque = 625
     cantidad_bloques = math.floor(lenght/longitud_bloque)
-    print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
+    # print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
     longitud_cola = lenght % longitud_bloque
-    print("Longitud cola: ", longitud_cola)
+    # print("Longitud cola: ", longitud_cola)
     for i in range(cantidad_bloques + 52):
         y_i = logistic_map_iterator(y_i)
         if i > 50 and i < (cantidad_bloques + 51):
@@ -255,9 +255,9 @@ def permutation_data(lenght):
 
     # list_positions = vectorize_bits_array(list_positions, 8)
     # print("Tent positions: \n", list_positions_tent)
-    print("Tent positions lenght: \n", len(list_positions_tent))
+    # print("Tent positions lenght: \n", len(list_positions_tent))
     # print("Logistic positions: \n", list_positions_logistic)
-    print("Logistic positions lenght: \n", len(list_positions_logistic))
+    # print("Logistic positions lenght: \n", len(list_positions_logistic))
     return list_positions_tent, list_positions_logistic, longitud_cola, longitud_bloque
 
 
@@ -300,6 +300,7 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
     # print("permuted_data: \n", permuted_data)
     # print("permuted_data shape: \n", permuted_data.shape)
     return permuted_data
+    # return permuted_data_bits
 
 
 def binary_array_to_int(array):
@@ -364,6 +365,8 @@ def convert_to_wav_file(data_array):
 
     # print("Frecuencias trasladadas: ", binaries_array[0:10])
 
+    # get_statics(data[22:, 1] binaries_array)
+
     binaries_array = binaries_array - 32768
 
     # print("Frecuencias: ", binaries_array[0:10])
@@ -371,7 +374,7 @@ def convert_to_wav_file(data_array):
 
     final_array = np.empty_like(data)
     # print("Final data: ", final_array[0:43])
-    show_info("binariesArray", binaries_array)
+    show_info("BINARIES ARRAY", binaries_array)
     final_array[:, 0] = np.concatenate((data_header[:, 0], binaries_array))
     final_array[:, 1] = np.concatenate((data_header[:, 1], binaries_array))
     final_array = final_array.astype(np.int16)
@@ -381,9 +384,12 @@ def convert_to_wav_file(data_array):
     # plot_info(final_array)
 
     scipy.io.wavfile.write(
-        'audio/' + tracks[2][0] + '-encrypted.wav', rate, final_array)
+        'audio/' + tracks[1][0] + '-encrypted.wav', rate, final_array)
 
-    get_statics(data, final_array)
+    show_info("ORIGINAL DATA", data[22:, 0])
+    show_info("ENCRYPTED DATA", final_array[22:, 0])
+
+    get_statics(data[22:, 0], final_array[22:, 0])
 
     # new_rate, new_data = scipy.io.wavfile.read(
     #     'audio/AnnenMayKantereit-19-encrypted.wav')
@@ -396,32 +402,107 @@ def convert_to_wav_file(data_array):
     # print('Spearmans correlation: %.3f' % corr)
 
 
-def signaltonoise(a, axis=0, ddof=0):
+def SNR(a, axis=0, ddof=0):
     a = np.asanyarray(a)
     m = a.mean(axis)
     sd = a.std(axis=axis, ddof=ddof)
     return np.where(sd == 0, 0, m/sd)
 
 
+def PSNR(original, encrypted, mse):
+    if(mse == 0):  # MSE is zero means no noise is present in the signal .
+        # Therefore PSNR have no importance.
+        return 100
+    max_sample = 65535
+    psnr = 10 * math.log10((max_sample**2)/mse)
+    return psnr
+
+
+def MSE_NSCR_UACI(original, encrypted):
+    original = original + 32768
+    encrypted = encrypted + 32768
+    addition = 0
+    nscr = 0
+    uaci = 0
+    # print("MSE PROCEDURE: ")
+    for i in range(0, len(original)):
+        # print("", i, ":")
+        # print("------Sum: ", original[i], "-",
+        #       encrypted[i], "=", (original[i] - encrypted[i]))
+        # print("------Pow: ", (original[i] - encrypted[i]) ** 2)
+        addition = addition + ((int(original[i]) - int(encrypted[i])) ** 2)
+        nscr = nscr + (0 if (int(original[i]) == int(encrypted[i])) else 1)
+        uaci = uaci + abs(int(original[i]) - int(encrypted[i]))
+        # print("------Total sum: ", addition)
+
+    # print("N: ", len(original))
+    # print("Total sum: ", addition)
+    return addition/len(original), (nscr/len(original))*100, (1/len(original))*(uaci/65535)*100
+
+
+def SNR_2(original, encrypted):
+    original = original + 32768
+    encrypted = encrypted + 32768
+    denominator = 0
+    numerator = 0
+    for i in range(0, len(original)):
+        numerator = numerator + (int(original[i]) ** 2)
+        denominator = denominator + abs(int(original[i]) - int(encrypted[i]))
+
+    # print("Numerator: ", numerator)
+    # print("Denominator: ", denominator)
+
+    return 10 * math.log10(numerator/denominator)
+
+
+def SNR_3(original, encrypted):
+    original = original + 32768
+    encrypted = encrypted + 32768
+    denominator = 0
+    numerator = 0
+    for i in range(0, len(original)):
+        numerator = numerator + (int(original[i]) ** 2)
+        denominator = denominator + \
+            ((int(original[i]) - int(encrypted[i])) ** 2)
+
+    # print("Numerator: ", numerator)
+    # print("Denominator: ", denominator)
+
+    return 10 * math.log10(numerator/denominator)
+
+
 def get_statics(init_data, final_data):
-    corr, _ = pearsonr(init_data[:, 0], final_data[:, 0])
+
+    # print("Original samples \n", init_data[0:1000])
+    # print("Encrypted samples shape \n", final_data.shape)
+    # print("Encrypted samples len \n", len(final_data))
+
+    corr, _ = pearsonr(init_data, final_data)
     print('Pearsons correlation: %.9f' % corr)
 
-    corr, _ = spearmanr(init_data[:, 0], final_data[:, 0])
+    corr, _ = spearmanr(init_data, final_data)
     print('Spearmans correlation: %.9f' % corr)
 
-    pd_series = pd.Series(data[:, 0])
+    pd_series = pd.Series(init_data)
     counts = pd_series.value_counts()
     entpy = entropy(counts)
     print('Entropy original file: %.9f' % entpy)
-    pd_series = pd.Series(final_data[:, 0])
+    pd_series = pd.Series(final_data)
     counts = pd_series.value_counts()
     entpy = entropy(counts)
     print('Entropy encrypted file: %.9f' % entpy)
 
-    print('SNR: %.9f' % signaltonoise(final_data[:, 0]))
-    print('MSE: %.9f' % np.square(np.subtract(
-        data[:, 0], final_data[:, 0])).mean())
+    print('SNR: %.9f' % SNR(final_data))
+    print('SNR_2: %.9f' % SNR_2(init_data, final_data))
+    print('SNR_3: %.9f' % SNR_3(init_data, final_data))
+    # print('MSE: %.9f' % np.mean((init_data - final_data) ** 2))
+    # print('MSE: %.9f' % (np.sum((init_data - final_data) ** 2) / len(final_data)))
+    # print('MSE: %.9f' % (np.subtract(init_data, final_data) ** 2).mean())
+    mse, nscr, uaci = MSE_NSCR_UACI(init_data[:100], final_data[:100])
+    # print('MSE: %.9f' % mse)
+    print('PSNR: %.9f' % PSNR(init_data, final_data, mse))
+    print('NSCR: %.9f' % nscr)
+    print('UACI: %.9f' % uaci)
 
 
 data_array, key_array = stack_data(data, 16)
