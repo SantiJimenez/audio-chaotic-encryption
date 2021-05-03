@@ -209,7 +209,7 @@ def key_data(x_0, y_0, n, m, lenght):
     y = y_0
 
     list_keys = []
-    for i in range(0, int(lenght/2)):
+    for i in range(0, int(lenght/4)):
         x = polynomialSequenceX(x)
         y = polynomialSequenceY(y)
 
@@ -218,8 +218,11 @@ def key_data(x_0, y_0, n, m, lenght):
         list_keys.append(normalizationValues(
             y))
 
+    print("Longitud audio: \n", lenght)
+    print("Longitud claves: \n", len(list_keys))
     print("Claves generadas: \n", list_keys[0:8])
     list_keys_bits = vectorize_bits_array(list_keys, 4)
+    print("Longitud claves: \n", len(list_keys_bits))
     print("Claves de 4-bit obtenidas: \n", list_keys_bits[0:16])
 
     return list_keys_bits
@@ -256,7 +259,7 @@ def permutation_data(lenght):
             # print("tent value: ", x_final)
             # print("tent value in list: ", list_positions_tent[i])
 
-    longitud_bloque = 10
+    longitud_bloque = 255
     cantidad_bloques = math.floor(lenght/longitud_bloque)
     # print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
     longitud_cola = lenght % longitud_bloque
@@ -302,7 +305,7 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
         list(array_head_reshaped.shape), dtype=np.int8)
     print("ROTACIÓN DE BLOQUES")
     for i in range(len(position_data_bytes) - 1):
-        if i < 10:
+        if i < 2:
             print("Muestra de bloque de audio original: \n",
                   array_head_reshaped[i])
             print("Muestra de bloque de audio rotada: \n", np.roll(
@@ -326,6 +329,7 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
         (permuted_data_bytes_2d_head, permuted_data_bytes_tail), axis=0)
     # print("permuted_data: \n", permuted_data)
     # print("permuted_data shape: \n", permuted_data.shape)
+    print("Longitud data permutada:", len(permuted_data))
     return permuted_data
     # return permuted_data_bits
 
@@ -348,23 +352,25 @@ def substitute_data(data_array):
     substituted_data = []
 
     j = 0
+    print("- BITS ----- INT -- INVERSO ---- BITS")
     for byte in data_array:
-        if j < 10:
-            # print("byte: ", byte)
-            num = binary_array_to_int(byte)
-            # print("num: ", num)
-            # print("inverse: ", pow(num.item(), 15, 17))
-            inverse = pow(num.item(), 15, 17)
-            # print("binary: ", int_to_binary_array(inverse, 8))
-            substituted_data.append(int_to_binary_array(inverse, 4))
-        else:
-            # print("byte: ", byte)
-            num = binary_array_to_int(byte)
-            # print("num: ", num)
-            # print("inverse: ", pow(num.item(), 15, 17))
-            inverse = pow(num.item(), 15, 17)
-            # print("binary: ", int_to_binary_array(inverse, 8))
-            substituted_data.append(int_to_binary_array(inverse, 4))
+        num = binary_array_to_int(byte)
+        inverse = pow(num.item(), 15, 17)
+        substituted_data.append(int_to_binary_array(inverse, 4))
+        if j < 20:
+            # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
+            if num < 10 and inverse < 10:
+                print(byte, "-->", num, " ---->", inverse,
+                      " --->", int_to_binary_array(inverse, 4))
+            if num < 10 and inverse >= 10:
+                print(byte, "-->", num, " ---->", inverse,
+                      "--->", int_to_binary_array(inverse, 4))
+            if num >= 10 and inverse < 10:
+                print(byte, "-->", num, "---->", inverse,
+                      " --->", int_to_binary_array(inverse, 4))
+            if num >= 10 and inverse >= 10:
+                print(byte, "-->", num, "---->", inverse,
+                      "--->", int_to_binary_array(inverse, 4))
         j += 1
 
     return substituted_data
@@ -556,16 +562,24 @@ permuted_array = permutate_data(
 # print("Muestra permuted data:")
 # print(permuted_array[10:18])
 
-# xor_array = np.bitwise_xor(permuted_array, key_array)
+print("DATA LEN:", len(permuted_array))
+print("KEY LEN:", len(key_array))
+xor_array = np.bitwise_xor(permuted_array, key_array)
+print("- AUDIO ------- CLAVE ------ RESULTADO")
+# print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
+for i in range(len(permuted_array)):
+    if i < 10:
+        print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
+
 # print("Cantidad bytes de clave: ", len(key_array))
 # print("Muestra clave data:")
 # print(key_array[10:18])
 # print("Muestra xor data:")
 # print(xor_array[10:18])
 
-# substituted_array = substitute_data(xor_array)
+substituted_array = substitute_data(xor_array)
 # print("Muestra substituted data:")
-# print(substituted_array[10:18])
+# print(substituted_array[0:18])
 
 
 # print("|---------------------------------------------------------|")
