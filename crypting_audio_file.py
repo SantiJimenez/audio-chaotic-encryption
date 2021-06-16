@@ -35,8 +35,8 @@ LOGISTICA_X_0 = 0.6734678425981357
 total_bytes = 0
 # ----------- VARIABLES GLOBALES ----------- #
 
-tracks = [['lion', 'audio/lion.wav'], ['AnnenMayKantereit-2', 'audio/AnnenMayKantereit-2-mono.wav'], ['Silhouettes-2', 'audio/Silhouettes-2.wav'], ['AnnenMayKantereit-19', 'audio/AnnenMayKantereit-19.wav'],
-          ['Silhouettes-19', 'audio/Silhouettes-19.wav']]
+tracks = [['audio/Lion-1.wav', 'Lion-1'], ['audio/Annen-2.wav', 'Annen-2'], ['audio/Editors-4.wav', 'Editors-4'],
+          ['audio/SundaraK-10.wav', 'SundaraK-10'], ['audio/Aurora-18.wav', 'Aurora-18'], ['audio/Sam-30.wav', 'Sam-30']]
 
 
 def show_info(aname, a):
@@ -48,48 +48,9 @@ def show_info(aname, a):
     print("|-------------------------|")
 
 
-rate, data = scipy.io.wavfile.read(tracks[1][1])
-
-# show_info("data", data)
-
-# print("rate:", rate)
-# print("dataset samples:", data[22:54, :])
-bytes_data = bytes(data[0])
-
-data_header = data[0:22, :]
-# show_info("HEADER", data_header)
-print("DATASET HEADER:")
-print(data[0:22, 0])
-
-# def int_to_string(x, m):
-#     return np.vectorize(np.binary_repr(x).zfill(m))
-
-
 def int_to_byte_array_funct(num):
     # Convert a positive integer num into an m-bit bit vector
     return np.array(list(np.binary_repr(num).zfill(8))).astype(np.int8)
-
-
-# def vectorize_bits_array(array, m):
-#     int_to_string_function = np.vectorize(lambda x: np.binary_repr(x).zfill(8))
-#     strings_array = int_to_string_function(array)
-
-#     print("strings_array: ", strings_array)
-
-#     vectorize_bits_function = np.vectorize(lambda x: x[i_byte])
-
-#     bytes_array = np.zeros((len(array)), dtype=np.int8)
-#     bytes_array = np.zeros(list(bytes_array.shape) + [m], dtype=np.int8)
-
-#     for i_byte in range(0, m):
-#         print("vectorize_bits: ", vectorize_bits_function(
-#             strings_array).astype("int8"))
-
-#         bytes_array[..., i_byte] = vectorize_bits_function(
-#             strings_array).astype("int8")
-
-#     print("Bloques de claves: ", bytes_array[0:10])
-#     return bytes_array
 
 
 def vectorize_bits_array(array, m):
@@ -105,12 +66,12 @@ def stack_data(data, m):
     # Initialize numpy array using left data(mono) as int16
     data_array = np.array(data_left, dtype=np.int16)
 
-    print("Muestras de audio 16-bit con signo: \n", data_left[100:120])
+    # print("Muestras de audio 16-bit con signo: \n", data_left[100:120])
 
     # Translate the range (-32768, 32767) to positive values
     data_array = data_array + 32768
-    print("Muestras de audio 16-bit trasladados: \n",
-          data_array[100:120])
+    # print("Muestras de audio 16-bit trasladados: \n",
+    #       data_array[100:120])
 
     # Function int value to string binary
     to_string_function = np.vectorize(lambda x: np.binary_repr(x).zfill(m))
@@ -136,7 +97,7 @@ def stack_data(data, m):
         binaries_array[..., i_byte] = vectorize_bits_function(
             strings_array).astype("int16")
 
-    print("Vectores 16-bit de audio obtenidos: \n", binaries_array[100:120])
+    # print("Vectores 16-bit de audio obtenidos: \n", binaries_array[100:120])
     # print("Length binaries_array: ", binaries_array.shape[0])
     # print("Length bytes_array (16): ", bytes_array.shape[0])
 
@@ -170,7 +131,7 @@ def stack_data(data, m):
         else:
             j += 1
 
-    print("Vectores 4-bit de audio obtenidos: \n", bytes_array[400:420])
+    # print("Vectores 4-bit de audio obtenidos: \n", bytes_array[400:420])
     # print("Vectores 4-bit de audio obtenidos shape: \n", bytes_array.shape)
     total_bytes = bytes_array.shape[0]
     # print("Cantidad de vectores de audio obtenidos: \n", total_bytes)
@@ -208,12 +169,12 @@ def key_data(x_0, y_0, n, m, lenght):
         list_keys.append(normalizationValues(
             y))
 
-    print("Longitud audio: \n", lenght)
-    print("Longitud claves: \n", len(list_keys))
-    print("Claves generadas: \n", list_keys[0:8])
+    # print("Longitud audio: \n", lenght)
+    # print("Longitud claves: \n", len(list_keys))
+    # print("Claves generadas: \n", list_keys[0:8])
     list_keys_bits = vectorize_bits_array(list_keys, 4)
-    print("Longitud claves: \n", len(list_keys_bits))
-    print("Claves de 4-bit obtenidas: \n", list_keys_bits[0:16])
+    # print("Longitud claves: \n", len(list_keys_bits))
+    # print("Claves de 4-bit obtenidas: \n", list_keys_bits[0:16])
 
     return list_keys_bits
 
@@ -274,11 +235,11 @@ def permutation_data(lenght):
 def permutate_data(data_array, position_data_bits, position_data_bytes, tail_lenght, block_lenght):
 
     permuted_data_bits = np.zeros(list(data_array.shape), dtype=np.int8)
-    print("ROTACIÓN DE BITS")
+    # print("ROTACIÓN DE BITS")
     for i in range(len(data_array)):
-        if i < 10:
-            print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
-                data_array[i], position_data_bits[i]))
+        # if i < 10:
+        #     print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
+        #         data_array[i], position_data_bits[i]))
         permuted_data_bits[i] = np.roll(data_array[i], position_data_bits[i])
 
     # print("Data array \n", data_array)
@@ -293,13 +254,13 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
 
     permuted_data_bytes_head = np.zeros(
         list(array_head_reshaped.shape), dtype=np.int8)
-    print("ROTACIÓN DE BLOQUES")
+    # print("ROTACIÓN DE BLOQUES")
     for i in range(len(position_data_bytes) - 1):
-        if i < 2:
-            print("Muestra de bloque de audio original: \n",
-                  array_head_reshaped[i])
-            print("Muestra de bloque de audio rotada: \n", np.roll(
-                array_head_reshaped[i], position_data_bytes[i], axis=0))
+        # if i < 2:
+        #     print("Muestra de bloque de audio original: \n",
+        #           array_head_reshaped[i])
+        #     print("Muestra de bloque de audio rotada: \n", np.roll(
+        #         array_head_reshaped[i], position_data_bytes[i], axis=0))
         permuted_data_bytes_head[i] = np.roll(array_head_reshaped[i],
                                               position_data_bytes[i], axis=0)
 
@@ -319,7 +280,7 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
         (permuted_data_bytes_2d_head, permuted_data_bytes_tail), axis=0)
     # print("permuted_data: \n", permuted_data)
     # print("permuted_data shape: \n", permuted_data.shape)
-    print("Longitud data permutada:", len(permuted_data))
+    # print("Longitud data permutada:", len(permuted_data))
     return permuted_data
     # return permuted_data_bits
 
@@ -340,33 +301,37 @@ def int_to_binary_array(num, m):
 def substitute_data(data_array):
 
     substituted_data = []
+    # substituted_data = np.zeros(list(data_array.shape), dtype=np.int8)
 
     j = 0
-    print("- BITS ----- INT -- INVERSO ---- BITS")
+    # print("- BITS ----- INT -- INVERSO ---- BITS")
+    # for i in range(0, len(data_array)):
     for byte in data_array:
         num = binary_array_to_int(byte)
+        # num = binary_array_to_int(data_array[i])
         inverse = pow(num.item(), 15, 17)
         substituted_data.append(int_to_binary_array(inverse, 4))
-        if j < 20:
-            # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
-            if num < 10 and inverse < 10:
-                print(byte, "-->", num, " ---->", inverse,
-                      " --->", int_to_binary_array(inverse, 4))
-            if num < 10 and inverse >= 10:
-                print(byte, "-->", num, " ---->", inverse,
-                      "--->", int_to_binary_array(inverse, 4))
-            if num >= 10 and inverse < 10:
-                print(byte, "-->", num, "---->", inverse,
-                      " --->", int_to_binary_array(inverse, 4))
-            if num >= 10 and inverse >= 10:
-                print(byte, "-->", num, "---->", inverse,
-                      "--->", int_to_binary_array(inverse, 4))
+        # substituted_data[i] = int_to_binary_array(inverse, 4)
+        # if j < 20:
+        #     # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
+        #     if num < 10 and inverse < 10:
+        #         print(byte, "-->", num, " ---->", inverse,
+        #               " --->", int_to_binary_array(inverse, 4))
+        #     if num < 10 and inverse >= 10:
+        #         print(byte, "-->", num, " ---->", inverse,
+        #               "--->", int_to_binary_array(inverse, 4))
+        #     if num >= 10 and inverse < 10:
+        #         print(byte, "-->", num, "---->", inverse,
+        #               " --->", int_to_binary_array(inverse, 4))
+        #     if num >= 10 and inverse >= 10:
+        #         print(byte, "-->", num, "---->", inverse,
+        #               "--->", int_to_binary_array(inverse, 4))
         j += 1
 
     return substituted_data
 
 
-def convert_to_wav_file_format(data_array):
+def convert_to_wav_file_format(data_origin, data_array, data_header):
     binaries_array = np.zeros(int(len(data_array) / 4), dtype=np.int16)
     # binaries_array = np.zeros(
     #     list(binaries_array.shape) + [16], dtype=np.int16)
@@ -392,29 +357,19 @@ def convert_to_wav_file_format(data_array):
 
     binaries_array = binaries_array - 32768
 
-    print("Muestras de audio 16-bit cifradas: \n", binaries_array[0:20])
+    # print("Muestras de audio 16-bit cifradas: \n", binaries_array[0:20])
     # print("Cantidad frecuencias: ", len(binaries_array))
 
-    final_array = np.empty_like(data)
+    final_array = np.empty_like(data_origin)
     # print("Final data: ", final_array[0:43])
+    # show_info("DATA ARRAY", data_array)
     # show_info("BINARIES ARRAY", binaries_array)
+    # show_info("FINAL ARRAY", binaries_array)
     final_array[:, 0] = np.concatenate((data_header[:, 0], binaries_array))
     final_array[:, 1] = np.concatenate((data_header[:, 1], binaries_array))
     final_array = final_array.astype(np.int16)
     # print("Final data: ", final_array[22:54])
     return final_array
-
-    # get_statics(data[22:, 0], final_array[22:, 0])
-
-    # new_rate, new_data = scipy.io.wavfile.read(
-    #     'audio/AnnenMayKantereit-19-encrypted.wav')
-    # show_info("NewData", new_data)
-
-    # corr, _ = pearsonr(data[:, 0], final_array[:, 0])
-    # print('Pearsons correlation: %.3f' % corr)
-
-    # corr, _ = spearmanr(data[:, 0], final_array[:, 0])
-    # print('Spearmans correlation: %.3f' % corr)
 
 
 def plots(data, title, rate):
@@ -553,60 +508,67 @@ def get_statics(init_data, final_data):
     print('UACI: %.9f' % uaci)
 
 
-data_array, key_array = stack_data(data, 16)
-# print('-----------------------------------------')
-# print('-----------------------------------------')
-# print('-----------------------------------------')
-# print("Cantidad total de bytes de data: ", len(data_array))
-# print("Muestra matrices data:")
-# print(data_array[10:18])
+def encrypt_data(num_track):
+    rate, data = scipy.io.wavfile.read(tracks[(num_track - 1)][0])
 
-positions_bits, positions_bytes, tail_lenght, block_lenght = permutation_data(
-    len(data_array))
-# print("Cantidad positions: ", len(positions_array))
-print("Muestra de índices de permutación:")
-print("FUNCIÓN TIENDA")
-print(positions_bits[:20])
+    show_info("DATA ORIGIN", data)
+    # print("rate:", rate)
+    # print("dataset samples:", data[22:54, :])
+    # bytes_data = bytes(data[0])
 
-print("Muestra de índices de permutación:")
-print("FUNCIÓN LOGÍSTICA")
-print(positions_bytes[:20])
+    data_header = data[0:22, :]
+    show_info("HEADER", data_header)
+    # print("DATASET HEADER:")
+    # print(data[0:22, 0])
 
-permuted_array = permutate_data(
-    data_array, positions_bits, positions_bytes, tail_lenght, block_lenght)
-# print("Muestra permuted data:")
-# print(permuted_array[10:18])
+    data_array, key_array = stack_data(data, 16)
 
-print("DATA LEN:", len(permuted_array))
-print("KEY LEN:", len(key_array))
-xor_array = np.bitwise_xor(permuted_array, key_array)
-print("- AUDIO ------- CLAVE ------ RESULTADO")
-# print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
-for i in range(len(permuted_array)):
-    if i < 10:
-        print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
+    positions_bits, positions_bytes, tail_lenght, block_lenght = permutation_data(
+        len(data_array))
 
-# print("Cantidad bytes de clave: ", len(key_array))
-# print("Muestra clave data:")
-# print(key_array[10:18])
-# print("Muestra xor data:")
-# print(xor_array[10:18])
+    # print("Cantidad positions: ", len(positions_array))
+    # print("Muestra de índices de permutación:")
+    # print("FUNCIÓN TIENDA")
+    # print(positions_bits[:20])
 
-substituted_array = substitute_data(xor_array)
-# print("Muestra substituted data:")
-print(data[22:122, 0])
-print(substituted_array[0:100])
+    # print("Muestra de índices de permutación:")
+    # print("FUNCIÓN LOGÍSTICA")
+    # print(positions_bytes[:20])
 
-# print("|---------------------------------------------------------|")
-# print("|---------------------------------------------------------|")
+    permuted_array = permutate_data(
+        data_array, positions_bits, positions_bytes, tail_lenght, block_lenght)
+    # print("Muestra permuted data:")
+    # print(permuted_array[10:18])
 
-final_array = convert_to_wav_file_format(substituted_array)
+    # print("DATA LEN:", len(permuted_array))
+    # print("KEY LEN:", len(key_array))
+    xor_array = np.bitwise_xor(permuted_array, key_array)
+    # print("- AUDIO ------- CLAVE ------ RESULTADO")
+    # print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
+    # for i in range(len(permuted_array)):
+    #     if i < 10:
+    #         print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
+    # show_info("XOR ARRAY", xor_array)
+    substituted_array = substitute_data(xor_array)
+    # print("Muestra substituted data:")
+    # print(data[22:122, 0])
+    # print(substituted_array[0:100])
 
-scipy.io.wavfile.write(
-    'audio/' + tracks[1][0] + '-encrypted.wav', rate, final_array)
+    final_array = convert_to_wav_file_format(
+        data, substituted_array, data_header)
 
-show_info("ORIGINAL DATA", data[22:, 0])
-show_info("ENCRYPTED DATA", final_array[22:, 0])
+    get_statics(data[22:, 0], final_array[22:, 0])
 
-plots(data[22:, 0], "- Original", rate)
-plots(final_array[22:, 0], "- Encrypted", rate)
+    scipy.io.wavfile.write(
+        'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
+
+    show_info("ORIGINAL DATA", data[22:, 0])
+    show_info("ENCRYPTED DATA", final_array[22:, 0])
+
+    plots(data[22:, 0], "- Original", rate)
+    plots(final_array[22:, 0], "- Encrypted", rate)
+
+    return 0
+
+
+encrypt_data(6)
