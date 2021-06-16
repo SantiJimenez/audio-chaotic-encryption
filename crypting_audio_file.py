@@ -48,16 +48,6 @@ def show_info(aname, a):
     print("|-------------------------|")
 
 
-def plot_info(data):
-    time = np.linspace(0., data.shape[0], data.shape[0])
-    plt.plot(time, data[:, 0], label="Left channel")
-    # plt.plot(time, data[:, 1], label="Right channel")
-    plt.legend()
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude")
-    plt.show()
-
-
 rate, data = scipy.io.wavfile.read(tracks[1][1])
 
 # show_info("data", data)
@@ -376,7 +366,7 @@ def substitute_data(data_array):
     return substituted_data
 
 
-def convert_to_wav_file(data_array):
+def convert_to_wav_file_format(data_array):
     binaries_array = np.zeros(int(len(data_array) / 4), dtype=np.int16)
     # binaries_array = np.zeros(
     #     list(binaries_array.shape) + [16], dtype=np.int16)
@@ -402,25 +392,17 @@ def convert_to_wav_file(data_array):
 
     binaries_array = binaries_array - 32768
 
-    # print("Frecuencias: ", binaries_array[0:10])
+    print("Muestras de audio 16-bit cifradas: \n", binaries_array[0:20])
     # print("Cantidad frecuencias: ", len(binaries_array))
 
     final_array = np.empty_like(data)
     # print("Final data: ", final_array[0:43])
-    show_info("BINARIES ARRAY", binaries_array)
+    # show_info("BINARIES ARRAY", binaries_array)
     final_array[:, 0] = np.concatenate((data_header[:, 0], binaries_array))
     final_array[:, 1] = np.concatenate((data_header[:, 1], binaries_array))
     final_array = final_array.astype(np.int16)
     # print("Final data: ", final_array[22:54])
-
-    # plot_info(data)
-    # plot_info(final_array)
-
-    scipy.io.wavfile.write(
-        'audio/' + tracks[1][0] + '-encrypted.wav', rate, final_array)
-
-    show_info("ORIGINAL DATA", data[22:, 0])
-    show_info("ENCRYPTED DATA", final_array[22:, 0])
+    return final_array
 
     # get_statics(data[22:, 0], final_array[22:, 0])
 
@@ -433,6 +415,39 @@ def convert_to_wav_file(data_array):
 
     # corr, _ = spearmanr(data[:, 0], final_array[:, 0])
     # print('Spearmans correlation: %.3f' % corr)
+
+
+def plots(data, title, rate):
+
+    def waveform():
+        time = np.linspace(0., data.shape[0], data.shape[0])
+
+        plt.plot(time, data)
+        # plt.plot(time, data[:, 0], label="Left channel")
+        # plt.plot(time, data[:, 1], label="Right channel")
+        # plt.legend()
+        plt.title("Audio Waveform " + title)
+        plt.xlabel("Time [s]")
+        plt.ylabel("Amplitude [dB]")
+        plt.show()
+
+    def histogram():
+        plt.hist(data, bins='auto')  # arguments are passed to np.histogram.
+        plt.title("Audio Histogram " + title)
+        plt.xlabel("Amplitude [dB]")
+        plt.ylabel("Number of samples")
+        plt.show()
+
+    def spectogram():
+        plt.specgram(data, Fs=rate)
+        plt.title("Audio Spectrogram " + title)
+        plt.xlabel('Time [s]')
+        plt.ylabel('Frequency [Hz]')
+        plt.show()
+
+    waveform()
+    histogram()
+    spectogram()
 
 
 def SNR(a, axis=0, ddof=0):
@@ -579,10 +594,19 @@ for i in range(len(permuted_array)):
 
 substituted_array = substitute_data(xor_array)
 # print("Muestra substituted data:")
-# print(substituted_array[0:18])
-
+print(data[22:122, 0])
+print(substituted_array[0:100])
 
 # print("|---------------------------------------------------------|")
 # print("|---------------------------------------------------------|")
 
-# convert_to_wav_file(substituted_array)
+final_array = convert_to_wav_file_format(substituted_array)
+
+scipy.io.wavfile.write(
+    'audio/' + tracks[1][0] + '-encrypted.wav', rate, final_array)
+
+show_info("ORIGINAL DATA", data[22:, 0])
+show_info("ENCRYPTED DATA", final_array[22:, 0])
+
+plots(data[22:, 0], "- Original", rate)
+plots(final_array[22:, 0], "- Encrypted", rate)
