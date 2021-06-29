@@ -14,9 +14,9 @@ import constants
 # Polinomios de Chebyshev
 # x0, y0, m ,n
 CHEBYSHEV_X_0 = 0.4811295983708204
-CHEBYSHEV_Y_0 = -0.3437604907376320
+CHEBYSHEV_Y_0 = -0.8437604907376320
 CHEBYSHEV_N = 5.0468764305551317
-CHEBYSHEV_M = 9.0078127384258552
+CHEBYSHEV_M = 1.0078127384258552
 
 # Funcion Tienda
 # a
@@ -36,7 +36,36 @@ total_bytes = 0
 # ----------- VARIABLES GLOBALES ----------- #
 
 tracks = [['audio/Lion-1.wav', 'Lion-1'], ['audio/Annen-2.wav', 'Annen-2'], ['audio/Editors-4.wav', 'Editors-4'],
-          ['audio/SundaraK-10.wav', 'SundaraK-10'], ['audio/Aurora-18.wav', 'Aurora-18'], ['audio/Sam-30.wav', 'Sam-30']]
+          ['audio/SundaraK-10.wav', 'SundaraK-10'], ['audio/Aurora-18-2.wav', 'Aurora-18'], ['audio/Sam-30.wav', 'Sam-30']]
+
+
+def generateSeeds():
+    # np.random.seed(42)
+    np.set_printoptions(precision=16)
+    c_m = np.random.uniform(2, 20)
+    c_n = np.random.uniform(2, 20)
+    c_x = np.random.uniform(-0.8, 0.8)
+    c_y = np.random.uniform(-0.8, 0.8)
+
+    # t_u = np.random.uniform(0, 1)
+    t_u = np.random.uniform(1, 1.7)
+    t_x = np.random.uniform(0, 0.7)
+
+    l_u = 3.5778654516456545
+    l_x = np.random.uniform(0, 0.7)
+    # l_u = 3.7115645816513156
+    # l_x = 0.6734678425981357
+
+    print("     CX:", c_x)
+    print("     CY:", c_y)
+    print("     CM:", c_m)
+    print("     CN:", c_n)
+    print("     TU", t_u)
+    print("     TX", t_x)
+    print("     LU", l_u)
+    print("     LX", l_x)
+
+    return c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
 
 
 def show_info(aname, a):
@@ -58,7 +87,7 @@ def vectorize_bits_array(array, m):
     return np.reshape(int_to_byte_array, (len(int_to_byte_array)*2, m))
 
 
-def stack_data(data, m):
+def stack_data(data, m, c_x, c_y, c_n, c_m):
     data_right = data[22:, 1]
 
     data_left = data[22:, 0]
@@ -105,8 +134,14 @@ def stack_data(data, m):
     total_bytes = bytes_array.shape[0]
 
     # Generation of key blocks
+    # bytes_key_arrays = key_data(
+    #     control_parameters[0], control_parameters[1], control_parameters[2], control_parameters[3], total_bytes)
+
+    # bytes_key_arrays = key_data(
+    #     CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M, total_bytes)
+
     bytes_key_arrays = key_data(
-        CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N, CHEBYSHEV_M, total_bytes)
+        c_x, c_y, c_n, c_m, total_bytes)
 
     # print("Keys muestra: ", bytes_key_arrays[10:18])
     # print("Keys muestra: ", bytes_key_arrays[0:10])
@@ -160,14 +195,29 @@ def key_data(x_0, y_0, n, m, lenght):
     y = y_0
 
     list_keys = []
-    for i in range(0, int(lenght/4)):
+    for i in range(0, int(lenght/2)):
         x = polynomialSequenceX(x)
         y = polynomialSequenceY(y)
 
-        list_keys.append(normalizationValues(
-            x))
-        list_keys.append(normalizationValues(
-            y))
+        norm_x = normalizationValues(x)
+        norm_y = normalizationValues(y)
+
+        final_c = np.bitwise_xor(norm_x, norm_y)
+        # if i > 50:
+        #     condition_x = normalizationValues(x)
+        #     if condition_x % 2 == 0:
+        #         list_keys.append(normalizationValues(
+        #             x))
+        #         list_keys.append(normalizationValues(
+        #             y))
+        #     else:
+        #         list_keys.append(normalizationValues(
+        #             y))
+        #         list_keys.append(normalizationValues(
+        #             x))
+        # list_keys.append(normalizationValues(x))
+        # list_keys.append(normalizationValues(y))
+        list_keys.append(final_c % 256)
 
     # print("Longitud audio: \n", lenght)
     # print("Longitud claves: \n", len(list_keys))
@@ -179,50 +229,73 @@ def key_data(x_0, y_0, n, m, lenght):
     return list_keys_bits
 
 
-def permutation_data(lenght):
+def permutation_data(lenght, t_u, t_x, l_u, l_x):
 
     # print("Numero de vectores en permutation_data: ", lenght)
 
     def tend_map_iterator(x_0):
         x_i = 0
         if x_0 >= 0 and x_0 < 0.5:
-            x_i = x_0 * TIENDA_U
+            x_i = x_0 * t_u
         else:
-            x_i = (1 - x_0) * TIENDA_U
+            x_i = (1 - x_0) * t_u
 
         return x_i
 
     def logistic_map_iterator(x_0):
-        x_i = LOGISTICA_U * x_0 * (1 - x_0)
+        x_i = l_u * x_0 * (1 - x_0)
         return x_i
 
     list_positions_tent = []
     list_positions_logistic = []
-    x_i = TIENDA_X_0
-    y_i = LOGISTICA_X_0
+    x_i = t_x
+    y_i = l_x
 
     for i in range(lenght + 51):
         x_i = tend_map_iterator(x_i)
+        y_i = logistic_map_iterator(y_i)
         if i > 50:
             x_final = math.floor((x_i * 10**2) % 4)
+            y_final = math.floor((y_i * 10**2) % 4)
+            final_t = np.bitwise_xor(x_final, y_final)
             # POR REVISAR, ELECCION DE NUMERO
-            list_positions_tent.append(x_final)
-            # print("tent value: ", x_final)
-            # print("tent value in list: ", list_positions_tent[i])
+            list_positions_tent.append(final_t % 4)
+        #     # print("tent value: ", x_final)
+        #     # print("tent value in list: ", list_positions_tent[i])
+        # x_i = tend_map_iterator(x_i)
+        # if i > 50:
+        #     x_final = math.floor((x_i * 10**2) % 4)
+        #     # POR REVISAR, ELECCION DE NUMERO
+        #     list_positions_tent.append(x_final)
 
-    longitud_bloque = 255
+    longitud_bloque = 10
     cantidad_bloques = math.floor(lenght/longitud_bloque)
     # print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
     longitud_cola = lenght % longitud_bloque
     # print("Longitud cola: ", longitud_cola)
     for i in range(cantidad_bloques + 52):
+        x_i = tend_map_iterator(x_i)
         y_i = logistic_map_iterator(y_i)
         if i > 50 and i < (cantidad_bloques + 51):
+            x_final = math.floor((x_i * 10**3) % longitud_bloque)
             y_final = math.floor((y_i * 10**3) % longitud_bloque)
-            list_positions_logistic.append(y_final)
+            final_l = np.bitwise_xor(x_final, y_final)
+            list_positions_logistic.append(final_l % longitud_bloque)
         elif i > 50 and longitud_cola > 0:
+            x_final = math.floor((x_i * 10**3) % longitud_cola)
             y_final = math.floor((y_i * 10**3) % longitud_cola)
-            list_positions_logistic.append(y_final)
+            final_l = np.bitwise_xor(x_final, y_final)
+            list_positions_logistic.append(final_l % longitud_cola)
+            # y_final = math.floor((final_l * 10**3) % longitud_cola)
+            # list_positions_logistic.append(y_final)
+
+        # y_i = logistic_map_iterator(y_i)
+        # if i > 50 and i < (cantidad_bloques + 51):
+        #     y_final = math.floor((y_i * 10**3) % longitud_bloque)
+        #     list_positions_logistic.append(y_final)
+        # elif i > 50 and longitud_cola > 0:
+        #     y_final = math.floor((y_i * 10**3) % longitud_cola)
+        #     list_positions_logistic.append(y_final)
 
     # list_positions = vectorize_bits_array(list_positions, 8)
     # print("Tent positions: \n", list_positions_tent)
@@ -237,9 +310,9 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
     permuted_data_bits = np.zeros(list(data_array.shape), dtype=np.int8)
     # print("ROTACIÓN DE BITS")
     for i in range(len(data_array)):
-        # if i < 10:
-        #     print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
-        #         data_array[i], position_data_bits[i]))
+        if i < 10:
+            print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
+                data_array[i], position_data_bits[i]))
         permuted_data_bits[i] = np.roll(data_array[i], position_data_bits[i])
 
     # print("Data array \n", data_array)
@@ -256,11 +329,11 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
         list(array_head_reshaped.shape), dtype=np.int8)
     # print("ROTACIÓN DE BLOQUES")
     for i in range(len(position_data_bytes) - 1):
-        # if i < 2:
-        #     print("Muestra de bloque de audio original: \n",
-        #           array_head_reshaped[i])
-        #     print("Muestra de bloque de audio rotada: \n", np.roll(
-        #         array_head_reshaped[i], position_data_bytes[i], axis=0))
+        if i < 2:
+            print("Muestra de bloque de audio original: \n",
+                  array_head_reshaped[i])
+            print("Muestra de bloque de audio rotada: \n", np.roll(
+                array_head_reshaped[i], position_data_bytes[i], axis=0))
         permuted_data_bytes_head[i] = np.roll(array_head_reshaped[i],
                                               position_data_bytes[i], axis=0)
 
@@ -304,7 +377,7 @@ def substitute_data(data_array):
     # substituted_data = np.zeros(list(data_array.shape), dtype=np.int8)
 
     j = 0
-    # print("- BITS ----- INT -- INVERSO ---- BITS")
+    print("- BITS ----- INT -- INVERSO ---- BITS")
     # for i in range(0, len(data_array)):
     for byte in data_array:
         num = binary_array_to_int(byte)
@@ -312,20 +385,20 @@ def substitute_data(data_array):
         inverse = pow(num.item(), 15, 17)
         substituted_data.append(int_to_binary_array(inverse, 4))
         # substituted_data[i] = int_to_binary_array(inverse, 4)
-        # if j < 20:
-        #     # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
-        #     if num < 10 and inverse < 10:
-        #         print(byte, "-->", num, " ---->", inverse,
-        #               " --->", int_to_binary_array(inverse, 4))
-        #     if num < 10 and inverse >= 10:
-        #         print(byte, "-->", num, " ---->", inverse,
-        #               "--->", int_to_binary_array(inverse, 4))
-        #     if num >= 10 and inverse < 10:
-        #         print(byte, "-->", num, "---->", inverse,
-        #               " --->", int_to_binary_array(inverse, 4))
-        #     if num >= 10 and inverse >= 10:
-        #         print(byte, "-->", num, "---->", inverse,
-        #               "--->", int_to_binary_array(inverse, 4))
+        if j < 20:
+            # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
+            if num < 10 and inverse < 10:
+                print(byte, "-->", num, " ---->", inverse,
+                      " --->", int_to_binary_array(inverse, 4))
+            if num < 10 and inverse >= 10:
+                print(byte, "-->", num, " ---->", inverse,
+                      "--->", int_to_binary_array(inverse, 4))
+            if num >= 10 and inverse < 10:
+                print(byte, "-->", num, "---->", inverse,
+                      " --->", int_to_binary_array(inverse, 4))
+            if num >= 10 and inverse >= 10:
+                print(byte, "-->", num, "---->", inverse,
+                      "--->", int_to_binary_array(inverse, 4))
         j += 1
 
     return substituted_data
@@ -422,8 +495,12 @@ def PSNR(original, encrypted, mse):
 
 
 def MSE_NSCR_UACI(original, encrypted):
+    # show_info("ORIGINAL 1", original)
+    # show_info("ENCRYPTED 1", original)
     original = original + 32768
     encrypted = encrypted + 32768
+    # show_info("ORIGINAL", original)
+    # show_info("ENCRYPTED", original)
     addition = 0
     nscr = 0
     uaci = 0
@@ -435,12 +512,16 @@ def MSE_NSCR_UACI(original, encrypted):
         # print("------Pow: ", (original[i] - encrypted[i]) ** 2)
         addition = addition + ((int(original[i]) - int(encrypted[i])) ** 2)
         nscr = nscr + (0 if (int(original[i]) == int(encrypted[i])) else 1)
-        uaci = uaci + abs(int(original[i]) - int(encrypted[i]))
+        # if nscr > 0:
+        #     print("NSCR", nscr)
+
+        uaci = uaci + \
+            ((abs(int(original[i] - encrypted[i])))/(len(original)*65535))
         # print("------Total sum: ", addition)
 
     # print("N: ", len(original))
     # print("Total sum: ", addition)
-    return addition/len(original), (nscr/len(original))*100, (1/len(original))*(uaci/65535)*100
+    return addition/len(original), (nscr/len(original))*100, (uaci)*100
 
 
 def SNR_2(original, encrypted):
@@ -496,19 +577,23 @@ def get_statics(init_data, final_data):
     print('Entropy encrypted file: %.9f' % entpy)
 
     print('SNR: %.9f' % SNR(final_data))
-    print('SNR_2: %.9f' % SNR_2(init_data, final_data))
-    print('SNR_3: %.9f' % SNR_3(init_data, final_data))
+    # print('SNR_2: %.9f' % SNR_2(init_data, final_data))
+    # print('SNR_3: %.9f' % SNR_3(init_data, final_data))
     # print('MSE: %.9f' % np.mean((init_data - final_data) ** 2))
     # print('MSE: %.9f' % (np.sum((init_data - final_data) ** 2) / len(final_data)))
     # print('MSE: %.9f' % (np.subtract(init_data, final_data) ** 2).mean())
-    mse, nscr, uaci = MSE_NSCR_UACI(init_data[:100], final_data[:100])
+    mse, nscr, uaci = MSE_NSCR_UACI(init_data, final_data)
     # print('MSE: %.9f' % mse)
     print('PSNR: %.9f' % PSNR(init_data, final_data, mse))
+
+    comparison = np.array(init_data) == np.array(final_data)
+    equal_arrays = comparison.all()
+    print("SON IGUALES: ", equal_arrays)
     print('NSCR: %.9f' % nscr)
     print('UACI: %.9f' % uaci)
 
 
-def encrypt_data(num_track):
+def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x):
     rate, data = scipy.io.wavfile.read(tracks[(num_track - 1)][0])
 
     show_info("DATA ORIGIN", data)
@@ -520,20 +605,41 @@ def encrypt_data(num_track):
     show_info("HEADER", data_header)
     # print("DATASET HEADER:")
     # print(data[0:22, 0])
+    # print("ORIGINAL POSICION 1654:", data[1654, 0])
 
-    data_array, key_array = stack_data(data, 16)
+    # comparison = np.array(data) == np.array(custom_data)
+    # equal_arrays = comparison.all()
+    # print("SON IGUALES: ", equal_arrays)
+    # print("ORIGINAL POSICION 1654:", data[1654, 0])
+    # print("CUSTOM POSICION 1654:", custom_data[1654, 0])
+    # if custom:
+    #     print("1")
+    #     # print("ORIGINAL POSICION 1654 ANTES:", data[1654, 0])
+    #     custom_data = data[0:]
+    #     custom_data[1654, 0] = -1430
+    #     # print("ORIGINAL POSICION 1654 DESPUES:", data[1654, 0])
+
+    #     # comparison = np.array(data) == np.array(custom_data)
+    #     # equal_arrays = comparison.all()
+    #     # print("SON IGUALES: ", equal_arrays)
+    #     # print("ORIGINAL POSICION 1654:", data[1654, 0])
+    #     # print("CUSTOM POSICION 1654:", custom_data[1654, 0])
+    #     data_array, key_array = stack_data(custom_data, 16)
+    # else:
+    #     print("2")
+    #     data_array, key_array = stack_data(data, 16)
+
+    data_array, key_array = stack_data(data, 16, c_x, c_y, c_n, c_m)
 
     positions_bits, positions_bytes, tail_lenght, block_lenght = permutation_data(
-        len(data_array))
+        len(data_array), t_u, t_x, l_u, l_x)
 
     # print("Cantidad positions: ", len(positions_array))
-    # print("Muestra de índices de permutación:")
-    # print("FUNCIÓN TIENDA")
-    # print(positions_bits[:20])
+    print("Muestra de índices de permutación de vectores de 4-bit:")
+    print(positions_bits[:20])
 
-    # print("Muestra de índices de permutación:")
-    # print("FUNCIÓN LOGÍSTICA")
-    # print(positions_bytes[:20])
+    print("Muestra de índices de permutación de bloques:")
+    print(positions_bytes[:20])
 
     permuted_array = permutate_data(
         data_array, positions_bits, positions_bytes, tail_lenght, block_lenght)
@@ -543,11 +649,11 @@ def encrypt_data(num_track):
     # print("DATA LEN:", len(permuted_array))
     # print("KEY LEN:", len(key_array))
     xor_array = np.bitwise_xor(permuted_array, key_array)
-    # print("- AUDIO ------- CLAVE ------ RESULTADO")
+    print("- AUDIO ------- CLAVE ------ RESULTADO")
     # print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
-    # for i in range(len(permuted_array)):
-    #     if i < 10:
-    #         print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
+    for i in range(len(permuted_array)):
+        if i < 10:
+            print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
     # show_info("XOR ARRAY", xor_array)
     substituted_array = substitute_data(xor_array)
     # print("Muestra substituted data:")
@@ -559,16 +665,74 @@ def encrypt_data(num_track):
 
     get_statics(data[22:, 0], final_array[22:, 0])
 
-    scipy.io.wavfile.write(
-        'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
+    # scipy.io.wavfile.write(
+    #     'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
 
-    show_info("ORIGINAL DATA", data[22:, 0])
-    show_info("ENCRYPTED DATA", final_array[22:, 0])
+    # show_info("ORIGINAL DATA", data[22:, 0])
+    # show_info("ENCRYPTED DATA", final_array[22:, 0])
 
-    plots(data[22:, 0], "- Original", rate)
-    plots(final_array[22:, 0], "- Encrypted", rate)
+    # plots(data[22:, 0], "- Original", rate)
+    # plots(final_array[22:, 0], "- Encrypted", rate)
 
-    return 0
+    return final_array[22:, 0]
 
 
-encrypt_data(6)
+main_data = encrypt_data(2, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+                         CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+
+# c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x = generateSeeds()
+
+# main_data = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x)
+# data_1 = encrypt_data(2, False, c_x + 0.1, c_y, c_n, c_m, t_u, t_x, l_u, l_x)
+# data_2 = encrypt_data(2, False, c_x, c_y + 0.1, c_n, c_m, t_u, t_x, l_u, l_x)
+# data_3 = encrypt_data(2, False, c_x, c_y, c_n + 0.1, c_m, t_u, t_x, l_u, l_x)
+# data_4 = encrypt_data(2, False, c_x, c_y, c_n, c_m + 0.1, t_u, t_x, l_u, l_x)
+# data_5 = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u + 0.2, t_x, l_u, l_x)
+# data_6 = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u, t_x + 0.2, l_u, l_x)
+# data_7 = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u, t_x, l_u + 0.2, l_x)
+# data_8 = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x + 0.2)
+
+# main_data = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                          CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_1 = encrypt_data(1, False, CHEBYSHEV_X_0 + 0.1, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_2 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0 + 0.1, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_3 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N +
+#                       0.1, CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_4 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M + 0.1, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_5 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U + 0.1, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
+# data_6 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U, TIENDA_X_0 + 0.1, LOGISTICA_U, LOGISTICA_X_0)
+# data_7 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U + 0.1, LOGISTICA_X_0)
+# data_8 = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+#                       CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0 + 0.1)
+
+
+# print("-------------------")
+# print("Cambio 1:")
+# get_statics(main_data, data_1)
+# print("-------------------")
+# print("Cambio 2:")
+# get_statics(main_data, data_2)
+# print("-------------------")
+# print("Cambio 3:")
+# get_statics(main_data, data_3)
+# print("-------------------")
+# print("Cambio 4:")
+# get_statics(main_data, data_4)
+# print("-------------------")
+# print("Cambio 5:")
+# get_statics(main_data, data_5)
+# print("-------------------")
+# print("Cambio 6:")
+# get_statics(main_data, data_6)
+# print("-------------------")
+# print("Cambio 7:")
+# get_statics(main_data, data_7)
+# print("-------------------")
+# print("Cambio 8:")
+# get_statics(main_data, data_8)
