@@ -87,6 +87,7 @@ def vectorize_bits_array(array, m):
     return np.reshape(int_to_byte_array, (len(int_to_byte_array)*2, m))
 
 
+@profile
 def stack_data(data, m, c_x, c_y, c_n, c_m):
     data_right = data[22:, 1]
 
@@ -268,7 +269,7 @@ def permutation_data(lenght, t_u, t_x, l_u, l_x):
         #     # POR REVISAR, ELECCION DE NUMERO
         #     list_positions_tent.append(x_final)
 
-    longitud_bloque = 10
+    longitud_bloque = 255
     cantidad_bloques = math.floor(lenght/longitud_bloque)
     # print("Cantidad de bloques (+1 Cola): ", cantidad_bloques + 1)
     longitud_cola = lenght % longitud_bloque
@@ -310,9 +311,9 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
     permuted_data_bits = np.zeros(list(data_array.shape), dtype=np.int8)
     # print("ROTACIÓN DE BITS")
     for i in range(len(data_array)):
-        if i < 10:
-            print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
-                data_array[i], position_data_bits[i]))
+        # if i < 10:
+        #     print("Muestra de audio ", i+1, ": \n", data_array[i], " --> ", np.roll(
+        #         data_array[i], position_data_bits[i]))
         permuted_data_bits[i] = np.roll(data_array[i], position_data_bits[i])
 
     # print("Data array \n", data_array)
@@ -329,11 +330,11 @@ def permutate_data(data_array, position_data_bits, position_data_bytes, tail_len
         list(array_head_reshaped.shape), dtype=np.int8)
     # print("ROTACIÓN DE BLOQUES")
     for i in range(len(position_data_bytes) - 1):
-        if i < 2:
-            print("Muestra de bloque de audio original: \n",
-                  array_head_reshaped[i])
-            print("Muestra de bloque de audio rotada: \n", np.roll(
-                array_head_reshaped[i], position_data_bytes[i], axis=0))
+        # if i < 2:
+        #     print("Muestra de bloque de audio original: \n",
+        #           array_head_reshaped[i])
+        #     print("Muestra de bloque de audio rotada: \n", np.roll(
+        #         array_head_reshaped[i], position_data_bytes[i], axis=0))
         permuted_data_bytes_head[i] = np.roll(array_head_reshaped[i],
                                               position_data_bytes[i], axis=0)
 
@@ -377,7 +378,7 @@ def substitute_data(data_array):
     # substituted_data = np.zeros(list(data_array.shape), dtype=np.int8)
 
     j = 0
-    print("- BITS ----- INT -- INVERSO ---- BITS")
+    # print("- BITS ----- INT -- INVERSO ---- BITS")
     # for i in range(0, len(data_array)):
     for byte in data_array:
         num = binary_array_to_int(byte)
@@ -385,20 +386,20 @@ def substitute_data(data_array):
         inverse = pow(num.item(), 15, 17)
         substituted_data.append(int_to_binary_array(inverse, 4))
         # substituted_data[i] = int_to_binary_array(inverse, 4)
-        if j < 20:
-            # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
-            if num < 10 and inverse < 10:
-                print(byte, "-->", num, " ---->", inverse,
-                      " --->", int_to_binary_array(inverse, 4))
-            if num < 10 and inverse >= 10:
-                print(byte, "-->", num, " ---->", inverse,
-                      "--->", int_to_binary_array(inverse, 4))
-            if num >= 10 and inverse < 10:
-                print(byte, "-->", num, "---->", inverse,
-                      " --->", int_to_binary_array(inverse, 4))
-            if num >= 10 and inverse >= 10:
-                print(byte, "-->", num, "---->", inverse,
-                      "--->", int_to_binary_array(inverse, 4))
+        # if j < 20:
+        #     # print("[0 1 0 0] --> 10 ----> 15 ---> [0 1 0 0]")
+        #     if num < 10 and inverse < 10:
+        #         print(byte, "-->", num, " ---->", inverse,
+        #               " --->", int_to_binary_array(inverse, 4))
+        #     if num < 10 and inverse >= 10:
+        #         print(byte, "-->", num, " ---->", inverse,
+        #               "--->", int_to_binary_array(inverse, 4))
+        #     if num >= 10 and inverse < 10:
+        #         print(byte, "-->", num, "---->", inverse,
+        #               " --->", int_to_binary_array(inverse, 4))
+        #     if num >= 10 and inverse >= 10:
+        #         print(byte, "-->", num, "---->", inverse,
+        #               "--->", int_to_binary_array(inverse, 4))
         j += 1
 
     return substituted_data
@@ -593,16 +594,17 @@ def get_statics(init_data, final_data):
     print('UACI: %.9f' % uaci)
 
 
+@profile
 def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x):
     rate, data = scipy.io.wavfile.read(tracks[(num_track - 1)][0])
 
-    show_info("DATA ORIGIN", data)
+    # show_info("DATA ORIGIN", data)
     # print("rate:", rate)
     # print("dataset samples:", data[22:54, :])
     # bytes_data = bytes(data[0])
 
     data_header = data[0:22, :]
-    show_info("HEADER", data_header)
+    # show_info("HEADER", data_header)
     # print("DATASET HEADER:")
     # print(data[0:22, 0])
     # print("ORIGINAL POSICION 1654:", data[1654, 0])
@@ -635,11 +637,11 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
         len(data_array), t_u, t_x, l_u, l_x)
 
     # print("Cantidad positions: ", len(positions_array))
-    print("Muestra de índices de permutación de vectores de 4-bit:")
-    print(positions_bits[:20])
+    # print("Muestra de índices de permutación de vectores de 4-bit:")
+    # print(positions_bits[:20])
 
-    print("Muestra de índices de permutación de bloques:")
-    print(positions_bytes[:20])
+    # print("Muestra de índices de permutación de bloques:")
+    # print(positions_bytes[:20])
 
     permuted_array = permutate_data(
         data_array, positions_bits, positions_bytes, tail_lenght, block_lenght)
@@ -649,11 +651,11 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
     # print("DATA LEN:", len(permuted_array))
     # print("KEY LEN:", len(key_array))
     xor_array = np.bitwise_xor(permuted_array, key_array)
-    print("- AUDIO ------- CLAVE ------ RESULTADO")
+    # print("- AUDIO ------- CLAVE ------ RESULTADO")
     # print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
-    for i in range(len(permuted_array)):
-        if i < 10:
-            print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
+    # for i in range(len(permuted_array)):
+    #     if i < 10:
+    #         print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
     # show_info("XOR ARRAY", xor_array)
     substituted_array = substitute_data(xor_array)
     # print("Muestra substituted data:")
@@ -663,7 +665,7 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
     final_array = convert_to_wav_file_format(
         data, substituted_array, data_header)
 
-    get_statics(data[22:, 0], final_array[22:, 0])
+    # get_statics(data[22:, 0], final_array[22:, 0])
 
     # scipy.io.wavfile.write(
     #     'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
@@ -677,9 +679,10 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
     return final_array[22:, 0]
 
 
-main_data = encrypt_data(2, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
+print("Starting encryption....")
+main_data = encrypt_data(1, False, CHEBYSHEV_X_0, CHEBYSHEV_Y_0, CHEBYSHEV_N,
                          CHEBYSHEV_M, TIENDA_U, TIENDA_X_0, LOGISTICA_U, LOGISTICA_X_0)
-
+print("Data encrypted!")
 # c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x = generateSeeds()
 
 # main_data = encrypt_data(2, False, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x)
