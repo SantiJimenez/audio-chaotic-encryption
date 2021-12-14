@@ -36,7 +36,7 @@ total_bytes = 0
 # ----------- VARIABLES GLOBALES ----------- #
 
 tracks = [['audio/Lion-1.wav', 'Lion-1'], ['audio/Annen-2.wav', 'Annen-2'], ['audio/Editors-4.wav', 'Editors-4'],
-          ['audio/SundaraK-10.wav', 'SundaraK-10'], ['audio/Aurora-18-2.wav', 'Aurora-18'], ['audio/Sam-30.wav', 'Sam-30']]
+          ['audio/SundaraK-10.wav', 'SundaraK-10'], ['audio/Aurora-18.wav', 'Aurora-18'], ['audio/Sam-30.wav', 'Sam-30']]
 
 
 def generateSeeds():
@@ -87,7 +87,7 @@ def vectorize_bits_array(array, m):
     return np.reshape(int_to_byte_array, (len(int_to_byte_array)*2, m))
 
 
-@profile
+# @profile
 def stack_data(data, m, c_x, c_y, c_n, c_m):
     data_right = data[22:, 1]
 
@@ -448,35 +448,41 @@ def convert_to_wav_file_format(data_origin, data_array, data_header):
 
 def plots(data, title, rate):
 
-    def waveform():
-        time = np.linspace(0., data.shape[0], data.shape[0])
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
 
-        plt.plot(time, data)
-        # plt.plot(time, data[:, 0], label="Left channel")
-        # plt.plot(time, data[:, 1], label="Right channel")
-        # plt.legend()
-        plt.title("Audio Waveform " + title)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Amplitude [dB]")
-        plt.show()
+    time = np.linspace(0., data.shape[0], data.shape[0])
+    ax1.plot(time, data)
+    # plt.plot(time, data[:, 0], label="Left channel")
+    # plt.plot(time, data[:, 1], label="Right channel")
+    # plt.legend()
+    ax1.set_title("Audio Waveform " + title)
+    # ax1.xlabel("Time [s]")
+    # ax1.ylabel("Amplitude [dB]")
+    ax1.set(xlabel='Time [s]', ylabel='Amplitude [dB]')
+    # plt.show()
 
-    def histogram():
-        plt.hist(data, bins='auto')  # arguments are passed to np.histogram.
-        plt.title("Audio Histogram " + title)
-        plt.xlabel("Amplitude [dB]")
-        plt.ylabel("Number of samples")
-        plt.show()
+    # arguments are passed to np.histogram.
+    ax2.hist(data, bins='auto', color='green')
+    ax2.set_title("Audio Histogram " + title)
+    # ax2.xlabel("Amplitude [dB]")
+    # ax2.ylabel("Number of samples")
+    ax2.set(xlabel='Amplitude [dB]', ylabel='Number of samples')
+    # plt.show()
 
-    def spectogram():
-        plt.specgram(data, Fs=rate)
-        plt.title("Audio Spectrogram " + title)
-        plt.xlabel('Time [s]')
-        plt.ylabel('Frequency [Hz]')
-        plt.show()
+    ax3.specgram(data, Fs=rate)
+    ax3.set_title("Audio Spectrogram " + title)
+    # ax3.xlabel('Time [s]')
+    # ax3.ylabel('Frequency [Hz]')
+    ax3.set(xlabel='Time [s]', ylabel='Frequency [Hz]')
+    # plt.show()
 
-    waveform()
-    histogram()
-    spectogram()
+    # for ax in axs.flat:
+    #     ax.set(xlabel='x-label', ylabel='y-label')
+
+    # for ax in axs.flat:
+    #     ax.label_outer()
+
+    # plt.show()
 
 
 def SNR(a, axis=0, ddof=0):
@@ -594,10 +600,10 @@ def get_statics(init_data, final_data):
     print('UACI: %.9f' % uaci)
 
 
-@profile
+# @profile
 def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x):
     rate, data = scipy.io.wavfile.read(tracks[(num_track - 1)][0])
-
+    print("Archivo leído satisfactoriamente...")
     # show_info("DATA ORIGIN", data)
     # print("rate:", rate)
     # print("dataset samples:", data[22:54, :])
@@ -632,10 +638,12 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
     #     data_array, key_array = stack_data(data, 16)
 
     data_array, key_array = stack_data(data, 16, c_x, c_y, c_n, c_m)
+    print("Muestras de audio organizadas...")
+    print("Claves binarias generadas...")
 
     positions_bits, positions_bytes, tail_lenght, block_lenght = permutation_data(
         len(data_array), t_u, t_x, l_u, l_x)
-
+    print("Índices de permutación generados...")
     # print("Cantidad positions: ", len(positions_array))
     # print("Muestra de índices de permutación de vectores de 4-bit:")
     # print(positions_bits[:20])
@@ -645,12 +653,14 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
 
     permuted_array = permutate_data(
         data_array, positions_bits, positions_bytes, tail_lenght, block_lenght)
+    print("Muestras de audio permutadas...")
     # print("Muestra permuted data:")
     # print(permuted_array[10:18])
 
     # print("DATA LEN:", len(permuted_array))
     # print("KEY LEN:", len(key_array))
     xor_array = np.bitwise_xor(permuted_array, key_array)
+    print("Clave aplicada exitosamente...")
     # print("- AUDIO ------- CLAVE ------ RESULTADO")
     # print("[1 0 0 0] XOR [1 0 0 0] ---> [1 0 0 0]")
     # for i in range(len(permuted_array)):
@@ -658,6 +668,7 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
     #         print(permuted_array[i], "XOR", key_array[i], "--->", xor_array[i])
     # show_info("XOR ARRAY", xor_array)
     substituted_array = substitute_data(xor_array)
+    print("Muestras de audio sustituidas...")
     # print("Muestra substituted data:")
     # print(data[22:122, 0])
     # print(substituted_array[0:100])
@@ -667,14 +678,16 @@ def encrypt_data(num_track, custom: bool, c_x, c_y, c_n, c_m, t_u, t_x, l_u, l_x
 
     # get_statics(data[22:, 0], final_array[22:, 0])
 
-    # scipy.io.wavfile.write(
-    #     'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
+    scipy.io.wavfile.write(
+        'audio/Encrypted/' + tracks[(num_track - 1)][1] + '-encrypted.wav', rate, final_array)
 
-    # show_info("ORIGINAL DATA", data[22:, 0])
-    # show_info("ENCRYPTED DATA", final_array[22:, 0])
+    show_info("ORIGINAL DATA", data[22:, 0])
+    show_info("ENCRYPTED DATA", final_array[22:, 0])
 
-    # plots(data[22:, 0], "- Original", rate)
-    # plots(final_array[22:, 0], "- Encrypted", rate)
+    plots(data[22:, 0], "- Original", rate)
+    plots(final_array[22:, 0], "- Encrypted", rate)
+
+    plt.show()
 
     return final_array[22:, 0]
 
@@ -739,3 +752,7 @@ print("Data encrypted!")
 # print("-------------------")
 # print("Cambio 8:")
 # get_statics(main_data, data_8)
+
+
+# kernprof -l crypting_audio_file.py
+# py -m line_profiler crypting_audio_file.py.lprof
